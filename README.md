@@ -8,22 +8,13 @@ This directory contains Python scripts for processing and analyzing power outage
 Git-based file versioning tool that extracts historical versions of data files from repository commits. Iterates through commit history to export file snapshots at different points in time, enabling temporal analysis of data evolution. Useful for understanding how outage data changes over time and tracking data quality improvements. Supports export of multiple file versions with timestamp-based naming.
 
 ### `create_outages_dataframe.py`
-Main data processing script that converts utility-specific outage data into a standardized CSV format. Supports PSE (JSON), SCL (JSON), and SNO PUD (KML) data sources. Parses polygon coordinates, calculates smallest enclosing circles for outage areas, and extracts metadata like outage IDs, customer counts, and timestamps. Handles timezone conversions and normalizes data structures across different utility formats. Outputs `outage_updates.csv` with consistent schema for downstream analysis.
+Main data processing script that converts utility-specific outage data into a standardized CSV format, with out row for each outage snapshot from the input files. (notable, NOT one row per outage -- the history script does that.) Supports PSE (JSON), SCL (JSON), and SNO PUD (KML) data sources. Parses polygon coordinates, calculates smallest enclosing circles for outage areas, and extracts metadata like outage IDs, customer counts, and timestamps. Handles timezone conversions and normalizes data structures across different utility formats. Outputs `outage_updates.csv` with consistent schema for downstream analysis.
 
 ### `analyze_current_outages.py`
 Filters and analyzes the most recent outage data snapshot. Identifies current outages by finding the latest timestamp in the dataset, then applies configurable thresholds for outage duration and customer impact. Calculates expected outage lengths and creates a filtered subset of active outages. Useful for real-time monitoring and identifying outages that meet specific criteria for response prioritization.
 
 ### `analyze_historical_outages.py`
-Performs longitudinal analysis of outage data across multiple time points. Tracks changes in outage properties over time, including polygon modifications, start time updates, and restoration time adjustments. Generates summary statistics and identifies outages with evolving characteristics. Excludes edge cases where outages span the entire dataset timeframe to focus on complete outage lifecycles.
-
-
-## Data Files
-
-- `outage_updates.csv`: Standardized outage data from all utilities
-- `current_outages.csv`: Filtered current outage snapshot
-- `outage_summary.csv`: Historical analysis results
-- `pse-events.json`: Raw PSE outage data
-- `files/`: Directory containing historical data snapshots
+Extracts the unique outages from the dataframe created by create_outages_dataframe, and does some initial analysis of those outages. Also does some analysis to look at how outage properties change over time, including polygons, start time, and restoration time. Excludes edge cases where outages begin before the data window or end after the data window, to focus on complete outage lifecycles.
 
 ## Usage examples
 
