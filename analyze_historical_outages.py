@@ -1,5 +1,8 @@
+import argparse
 import pandas as pd
 from datetime import datetime
+import matplotlib.pyplot as plt
+import numpy as np
 
 def has_changes(series):
     return series.nunique() > 1
@@ -35,10 +38,14 @@ def format_timedelta_hhmm(td):
     return f"{sign}{hours:02}:{minutes:02}"
 
 def main():
-    df = pd.read_csv("outage_updates.csv")
+    parser = argparse.ArgumentParser(description="Analyze historical PSE outages.")
+    parser.add_argument('-f', '--file_input', type=str, default="outage_updates.csv", 
+                       help='Input file name (default: outage_updates.csv)')
+    args = parser.parse_args()
+    df = pd.read_csv(args.file_input)
 
-    # Add snapshot_datetime column
-    df['snapshot_datetime'] = pd.to_datetime(df['snapshot_datetime'])
+    # Add file_datetime column
+    df['snapshot_datetime'] = pd.to_datetime(df['file_datetime'])
     df = df.sort_values(["outage_id", "snapshot_datetime"])
 
     # Find the earliest and latest update datetimes in the dataset
@@ -60,15 +67,10 @@ def main():
 
     # 1. Polygon or Bounding Box changes
     polygon_changes = filtered_df.groupby("outage_id")["polygon_json"].agg(has_changes)
-    bbox_changes = filtered_df.groupby("outage_id")["bbox_json"].agg(has_changes)
     polygon_change_ids = polygon_changes[polygon_changes].index.tolist()
-    bbox_change_ids = bbox_changes[bbox_changes].index.tolist()
     num_polygon_changes = len(polygon_change_ids)
-    num_bbox_changes = len(bbox_change_ids)
     print(f"Number of outages with polygon changes: {num_polygon_changes}")
     print(f"Outage IDs with polygon changes: {polygon_change_ids}")
-    print(f"Number of outages with bounding box changes: {num_bbox_changes}")
-    print(f"Outage IDs with bounding box changes: {bbox_change_ids}")
 
     # 2. Outage Start Time changes
     start_time_changes = filtered_df.groupby("outage_id")["start_time"].agg(has_changes)
@@ -86,9 +88,9 @@ def main():
             last_est_restoration_time=("est_restoration_time", "last"),
             first_snapshot_datetime=("snapshot_datetime", "first"),
             last_snapshot_datetime=("snapshot_datetime", "last"),
-            last_bbox_json=("bbox_json", "last"),
             last_polygon_json=("polygon_json", "last"),
             last_start_time=("start_time", "last"),
+            max_customers_impacted=("customers_impacted", "max"),
         )
         .reset_index()
     )
@@ -119,6 +121,77 @@ def main():
     summary = summary[first_cols + other_cols]
 
     summary.to_csv("outage_summary.csv", index=False)
+
+    # Create chart showing distribution of total_outage_length values
+    plt.figure(figsize=(12, 8))
+    
+    # Convert total_outage_length to hours for better visualization
+    outage_lengths_hours = summary['total_outage_length'].dt.total_seconds() / 3600
+    
+    # Create histogram
+    plt.hist(outage_lengths_hours, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
+    plt.xlabel('Total Outage Length (hours)')
+    plt.ylabel('Number of Outages')
+    plt.title('Distribution of Total Outage Lengths')
+    plt.grid(True, alpha=0.3)
+    
+    # Add statistics as text
+    mean_hours = outage_lengths_hours.mean()
+    median_hours = outage_lengths_hours.median()
+    std_hours = outage_lengths_hours.std()
+    
+    stats_text = f'Mean: {mean_hours:.1f} hours\nMedian: {median_hours:.1f} hours\nStd Dev: {std_hours:.1f} hours'
+    plt.text(0.7, 0.9, stats_text, transform=plt.gca().transAxes, 
+             bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+             verticalalignment='top', fontsize=10)
+    
+    plt.tight_layout()
+    plt.savefig('outage_length_distribution.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    print(f"\nOutage length statistics:")
+    print(f"Mean: {mean_hours:.1f} hours")
+    print(f"Median: {median_hours:.1f} hours")
+    print(f"Standard deviation: {std_hours:.1f} hours")
+    print(f"Chart saved as 'outage_length_distribution.png'")
+
+    # Create chart showing distribution of customers impacted
+    plt.figure(figsize=(12, 8))
+    
+    # Convert customers_impacted to numeric, handling any non-numeric values
+    customers_impacted_numeric = pd.to_numeric(summary['max_customers_impacted'], errors='coerce')
+    customers_impacted_clean = customers_impacted_numeric.dropna()
+    
+    # Create histogram
+    plt.hist(customers_impacted_clean, bins=200, alpha=0.7, color='lightcoral', edgecolor='black')
+    plt.xlabel('Maximum Customers Impacted')
+    plt.ylabel('Number of Outages')
+    plt.title('Distribution of Maximum Customers Impacted per Outage')
+    plt.grid(True, alpha=0.3)
+    
+    # Increase number of x-axis ticks
+    plt.xticks(rotation=45)
+    plt.locator_params(axis='x', nbins=40)
+    
+    # Add statistics as text
+    mean_customers = customers_impacted_clean.mean()
+    median_customers = customers_impacted_clean.median()
+    std_customers = customers_impacted_clean.std()
+    
+    stats_text = f'Mean: {mean_customers:.0f} customers\nMedian: {median_customers:.0f} customers\nStd Dev: {std_customers:.0f} customers'
+    plt.text(0.7, 0.9, stats_text, transform=plt.gca().transAxes, 
+             bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+             verticalalignment='top', fontsize=10)
+    
+    plt.tight_layout()
+    plt.savefig('customers_impacted_distribution.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    print(f"\nCustomers impacted statistics:")
+    print(f"Mean: {mean_customers:.0f} customers")
+    print(f"Median: {median_customers:.0f} customers")
+    print(f"Standard deviation: {std_customers:.0f} customers")
+    print(f"Chart saved as 'customers_impacted_distribution.png'")
 
 if __name__ == "__main__":
     main()

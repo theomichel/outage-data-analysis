@@ -43,10 +43,10 @@ def main():
     df = pd.read_csv(args.file_input)
     
     # Find the most recent snapshot time in the entire dataset
-    max_update_time = df['snapshot_datetime'].max()
+    max_update_time = df['file_datetime'].max()
     
     # Filter to only include outages that have the most recent update time
-    current_outages_df = df[df['snapshot_datetime'] == max_update_time].copy()
+    current_outages_df = df[df['file_datetime'] == max_update_time].copy()
     
     # print out the snapshot time for vis
     print(f"using snapshot with timestamp {max_update_time}")
@@ -71,11 +71,11 @@ def main():
         'outage_id',
         'customers_impacted', 
         'start_time',
-        'polygon_json',
+        'expected_length_minutes',
         'center_lon',
         'center_lat',
         'radius',
-        'expected_length_minutes'
+        'polygon_json',
     ]].copy()
     
     # Save to new CSV file

@@ -158,8 +158,10 @@ def main():
     file_versions = []
     print(f"iterating through versions of {rel_path}.")
     for stats in versions(repo_path, args.limit, args.branch):
+        print(".", end="")
         if stats['object'].endswith(rel_path):
             file_versions.append(stats)
+    print(".")
 
     # Display the results and export file versions
     if not file_versions:
