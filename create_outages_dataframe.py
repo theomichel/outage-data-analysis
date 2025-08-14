@@ -10,9 +10,11 @@ from pykml import parser
 import math
 
 # grab attributes from an array of attributes, because PSE's json does it that way
-def get_attr(attributes, refname):
+def get_attr(attributes, attribute_name):
     for attr in attributes:
-        if attr.get("RefName") == refname:
+        if attr.get("RefName") == attribute_name:
+            return attr.get("Value")
+        elif attr.get("Name") == attribute_name:
             return attr.get("Value")
     return None
 
@@ -146,16 +148,51 @@ def smallest_enclosing_circle(array_of_arrays_of_points):
     return c
 
 def parse_pse_file(input_file, rows, file_datetime):
-    data = json.load(input_file)
+    print(f"Processing file: {file_datetime}")
+    try:
+        data = json.load(input_file)
+    except Exception as e:
+        print(f"error parsing pse file: {input_file}. Defaulting to empty list")
+        data = []
+        return
+
     for outage in data.get("PseMap", []):
         provider = outage.get("DataProvider", {})
         attributes = provider.get("Attributes", [])
+
+        # PSE has a few different attribute names for outage id, so we have to check for all of them
         outage_id = get_attr(attributes, "OutageEventId")
-        start_time = parse_dt(get_attr(attributes, "StartDate"))
+        if(not outage_id):
+            outage_id = get_attr(attributes, "Outage ID")
+        if(not outage_id):
+            # for a while, PSE used a blank attribute name for outage id
+            outage_id = get_attr(attributes, "")
+        if(not outage_id or not outage_id.startswith("INC")):
+            print(f"outage id {outage_id} does not start with INC, skipping")
+            # TODO: decide on a consistent way to handle these types of things. Ignore the outage, ignore the file, neither?
+            continue
+
+        start_time_json = get_attr(attributes, "StartDate")
+
+        # pse changed the attribute name when introducing the refname field, so we have to 
+        # check for both names for start time, est restoration time, and last updated
+        if(not start_time_json):
+            start_time_json = get_attr(attributes, "Start time")
+        start_time = parse_dt(start_time_json)
+
+        est_restoration_time_json = get_attr(attributes, "Est. Restoration time")
+        if(not est_restoration_time_json):
+            est_restoration_time_json = get_attr(attributes, "Est. restoration time")
+
+        try:
+            est_restoration_time = parse_dt(est_restoration_time_json)
+        except Exception as e:    
+            print(f"error parsing est restoration time: {est_restoration_time_json}. Exception: {e}Defaulting to None")
+            est_restoration_time = None
+
         customers_impacted = get_attr(attributes, "Customers impacted")
         status = get_attr(attributes, "Status")
         cause = get_attr(attributes, "Cause")
-        est_restoration_time = parse_dt(get_attr(attributes, "Est. Restoration time"))
         json_polygon = outage.get("Polygon", [])
 
         # PSE appears to always use a single polygon for each outage
@@ -172,7 +209,7 @@ def parse_pse_file(input_file, rows, file_datetime):
             "customers_impacted": customers_impacted,
             "status": status,
             "cause": cause,
-            "est_restoration_time": pytz.timezone('US/Pacific').localize(est_restoration_time),
+            "est_restoration_time": "none" if est_restoration_time is None else pytz.timezone('US/Pacific').localize(est_restoration_time),
             "polygon_json": json.dumps(polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,
@@ -291,6 +328,7 @@ def main():
         print(f"processing file {file}")
         basename = os.path.basename(file)
         date_time_part = basename.split(filename_suffix)[0]
+        # TODO: for some reason, the first file created by expand.py has a slightly different format. Figure out why and address there?
         gmt_file_datetime = datetime.strptime(date_time_part, "%Y-%m-%dT%H%M%S%f")
         # Convert GMT to PST
         pst_file_datetime = convert_gmt_to_pst(gmt_file_datetime)

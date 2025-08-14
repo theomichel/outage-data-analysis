@@ -24,11 +24,12 @@ def versions(path, count, branch='main'):
 
     # Create the repository, raises an error if it isn't one.
     repo = git.Repo(path)
+    assert not repo.bare
 
     # Iterate through the first N commits for the given branch in the repository
     # all indications are that they are in reverse chronological order by default
     # so we'll get the N most recent commits.
-    for commit in itertools.islice(repo.iter_commits(branch), count):
+    for commit in repo.iter_commits(branch, max_count=count):
         # Determine the parent of the commit to diff against.
         # If no parent, this is the first commit, so use empty tree.
         # Then create a mapping of path to diff for each file changed.
@@ -90,6 +91,35 @@ def diff_type(diff):
     return 'M'
 
 
+def count_versions(repo_path, rel_path, count, branch='main'):
+    """
+    Count the number of versions available for a given file without retrieving the actual content.
+    Uses git log --follow to efficiently count commits that touched the file.
+    Returns the count of versions found.
+    """
+    repo = git.Repo(repo_path)
+    
+    # Use repo.git.log with proper parameters
+    result = repo.git.log(
+        '--follow',
+        '--oneline',
+        '--format=%H',
+        f'{branch}',
+        '--',
+        rel_path,
+        n=count if count > 0 else None
+    )
+    
+    if result:
+        # Count non-empty lines (each line represents a commit)
+        version_count = len([line for line in result.split('\n') if line.strip()])
+    else:
+        version_count = 0
+        
+    
+    return version_count
+
+
 def main():
     """
     Main function to run the script from the command line.
@@ -102,6 +132,7 @@ def main():
     parser.add_argument('--repo', '-r', help='Path to the git repository (default: auto-detect)')
     parser.add_argument('--output-dir', '-o', help='Directory to save exported file versions (default: current directory)')
     parser.add_argument('--limit', '-l', type=int, help='Limit to the last N commits (default: all commits)')
+    parser.add_argument('--count-only', '-c', action='store_true', help='Only count the number of versions available, do not export files')
     args = parser.parse_args()
 
     # Get the file path and make it absolute
@@ -141,27 +172,38 @@ def main():
     print(f"Analyzing version history for: {rel_path}")
     print(f"Repository: {repo_path}")
     print(f"Branch: {args.branch}")
-    print(f"Exporting file versions to: {output_dir}")
+    
+    if args.count_only:
+        print("Mode: Count only (no file export)")
+    else:
+        print(f"Exporting file versions to: {output_dir}")
     print("-" * 80)
     
     # Create the repository object
     repo = git.Repo(repo_path)
-    print(f"using repo path: {repo_path}.")
+    print(f"using repo path: {repo_path}")
 
     if args.limit and args.limit > 0:
         print(f"Limiting to the last {args.limit} commits.")
     else:
-        args.limit = 0
-        print(f"no limit specified, exporting all versions.")
+        args.limit = -1
+        print(f"no limit specified, analyzing all versions.")
+
+    # Handle count-only mode
+    if args.count_only:
+        print(f"Counting versions of {rel_path}...")
+        version_count = count_versions(repo_path, rel_path, args.limit, args.branch)
+        print(f"Found {version_count} versions of '{rel_path}' in branch '{args.branch}'")
+        if args.limit > 0:
+            print(f"(searched through the last {args.limit} commits)")
+        return
 
     # Get top N versions of the file
     file_versions = []
     print(f"iterating through versions of {rel_path}.")
     for stats in versions(repo_path, args.limit, args.branch):
-        print(".", end="")
         if stats['object'].endswith(rel_path):
             file_versions.append(stats)
-    print(".")
 
     # Display the results and export file versions
     if not file_versions:

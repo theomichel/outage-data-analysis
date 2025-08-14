@@ -45,8 +45,11 @@ def main():
     df = pd.read_csv(args.file_input)
 
     # Add file_datetime column
-    df['snapshot_datetime'] = pd.to_datetime(df['file_datetime'])
+    df['snapshot_datetime'] = pd.to_datetime(df['file_datetime'], format="ISO8601") # %Y-%m-%dT%H%M%S%f
     df = df.sort_values(["outage_id", "snapshot_datetime"])
+    
+    # Parse estimated restoration time to datetime, coercing invalid/empty to NaT
+    df["est_restoration_dt"] = pd.to_datetime(df["est_restoration_time"], errors="coerce")
 
     # Find the earliest and latest update datetimes in the dataset
     min_snapshot_datetime = df["snapshot_datetime"].min()
@@ -80,12 +83,24 @@ def main():
     print(f"Outage IDs with start time changes: {start_time_change_ids}")
 
     # 3. One Row Per Outage Summary
+    # Helper functions to pick first/last non-null datetime per group, respecting order
+    def _first_valid(s: pd.Series):
+        idx = s.first_valid_index()
+        return s.loc[idx] if idx is not None else pd.NaT
+
+    def _last_valid(s: pd.Series):
+        idx = s.last_valid_index()
+        return s.loc[idx] if idx is not None else pd.NaT
+
+    # Ensure grouping preserves the sorted order above so first/last valid are chronological
+    filtered_df = filtered_df.sort_values(["outage_id", "snapshot_datetime"]) 
+
     summary = (
-        filtered_df.groupby("outage_id")
+        filtered_df.groupby("outage_id", sort=False)
         .agg(
             first_start_time=("start_time", "first"),
-            first_est_restoration_time=("est_restoration_time", "first"),
-            last_est_restoration_time=("est_restoration_time", "last"),
+            first_est_restoration_time=("est_restoration_dt", _first_valid),
+            last_est_restoration_time=("est_restoration_dt", _last_valid),
             first_snapshot_datetime=("snapshot_datetime", "first"),
             last_snapshot_datetime=("snapshot_datetime", "last"),
             last_polygon_json=("polygon_json", "last"),
@@ -97,8 +112,14 @@ def main():
     
     # Parse start time and estimated restoration times as datetimes for calculations
     summary["first_start_time_dt"] = pd.to_datetime(summary["first_start_time"])
-    summary["first_est_restoration_dt"] = pd.to_datetime(summary["first_est_restoration_time"])
-    summary["last_est_restoration_dt"] = pd.to_datetime(summary["last_est_restoration_time"])
+    # Already datetime from aggregation above
+    # TODO: if that's true, don't do the copy here
+    summary["first_est_restoration_dt"] = summary["first_est_restoration_time"]
+    summary["last_est_restoration_dt"] = summary["last_est_restoration_time"]
+
+# old way
+#    summary["first_est_restoration_dt"] = pd.to_datetime(summary["first_est_restoration_time"])
+#    summary["last_est_restoration_dt"] = pd.to_datetime(summary["last_est_restoration_time"])
 
     # do some calculations of outage lengths
     summary["total_outage_length"] = summary["last_snapshot_datetime"] - summary["first_start_time_dt"]
@@ -126,19 +147,24 @@ def main():
     plt.figure(figsize=(12, 8))
     
     # Convert total_outage_length to hours for better visualization
-    outage_lengths_hours = summary['total_outage_length'].dt.total_seconds() / 3600
+    # outage_lengths_hours = summary['total_outage_length'].dt.total_seconds() / 3600
+    outage_lengths_hours = summary['total_outage_length'].apply(lambda x: x.total_seconds() / 3600)
     
+    # Limit visualization to 0 <= hours < 10 days (240 hours)
+    filtered_outage_lengths_hours = outage_lengths_hours[(outage_lengths_hours >= 0) & (outage_lengths_hours < 24 * 10)]
+
     # Create histogram
-    plt.hist(outage_lengths_hours, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
+    plt.hist(filtered_outage_lengths_hours, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
     plt.xlabel('Total Outage Length (hours)')
     plt.ylabel('Number of Outages')
     plt.title('Distribution of Total Outage Lengths')
     plt.grid(True, alpha=0.3)
+    plt.xlim(0, 24 * 10)
     
     # Add statistics as text
-    mean_hours = outage_lengths_hours.mean()
-    median_hours = outage_lengths_hours.median()
-    std_hours = outage_lengths_hours.std()
+    mean_hours = filtered_outage_lengths_hours.mean()
+    median_hours = filtered_outage_lengths_hours.median()
+    std_hours = filtered_outage_lengths_hours.std()
     
     stats_text = f'Mean: {mean_hours:.1f} hours\nMedian: {median_hours:.1f} hours\nStd Dev: {std_hours:.1f} hours'
     plt.text(0.7, 0.9, stats_text, transform=plt.gca().transAxes, 
