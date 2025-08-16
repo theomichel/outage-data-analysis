@@ -8,6 +8,7 @@ import argparse
 import itertools
 from pathlib import Path
 import re
+from datetime import datetime, timezone
 
 
 ## Module Constants
@@ -133,7 +134,19 @@ def main():
     parser.add_argument('--output-dir', '-o', help='Directory to save exported file versions (default: current directory)')
     parser.add_argument('--limit', '-l', type=int, help='Limit to the last N commits (default: all commits)')
     parser.add_argument('--count-only', '-c', action='store_true', help='Only count the number of versions available, do not export files')
+    parser.add_argument('--start-datetime', '-s', help='Start date/time (UTC) to filter by in YYYY-MM-DDTHH:MM:SS-Z format (default: all time)')
+    parser.add_argument('--end-datetime', '-e', help='End date/time (UTC) to filter by in YYYY-MM-DDTHH:MM:SS-Z format (default: all time)')
     args = parser.parse_args()
+
+    if args.start_datetime:
+        start_date_utc = datetime.strptime(args.start_datetime, DATE_TIME_FORMAT)
+    else:
+        start_date_utc = datetime.min.replace(tzinfo=timezone.utc)
+
+    if args.end_datetime:
+        end_date_utc = datetime.strptime(args.end_datetime, DATE_TIME_FORMAT)
+    else:
+        end_date_utc = datetime.now(timezone.utc)
 
     # Get the file path and make it absolute
     file_path = os.path.abspath(args.path)
@@ -190,7 +203,7 @@ def main():
         print(f"no limit specified, analyzing all versions.")
 
     # Handle count-only mode
-    if args.count_only:
+    if args.count_only and args.start_datetime is None and args.end_datetime is None:
         print(f"Counting versions of {rel_path}...")
         version_count = count_versions(repo_path, rel_path, args.limit, args.branch)
         print(f"Found {version_count} versions of '{rel_path}' in branch '{args.branch}'")
@@ -198,12 +211,24 @@ def main():
             print(f"(searched through the last {args.limit} commits)")
         return
 
-    # Get top N versions of the file
+    # iterate through the versions to get all the stats, which will later be used for download
+    # while doing so, filter by date
     file_versions = []
     print(f"iterating through versions of {rel_path}.")
     for stats in versions(repo_path, args.limit, args.branch):
-        if stats['object'].endswith(rel_path):
+        # Convert timestamp string back to datetime for comparison
+        timestamp_dt = datetime.strptime(stats['timestamp'], DATE_TIME_FORMAT)
+        # Convert to UTC for consistent timezone-aware comparison
+        if timestamp_dt.tzinfo is None:
+            timestamp_dt = timestamp_dt.replace(tzinfo=timezone.utc)
+        else:
+            timestamp_dt = timestamp_dt.astimezone(timezone.utc)
+        if stats['object'].endswith(rel_path) and timestamp_dt >= start_date_utc and timestamp_dt <= end_date_utc:
             file_versions.append(stats)
+
+    if args.count_only:
+        print(f"Found {len(file_versions)} versions of '{rel_path}' in branch '{args.branch}' based on date range {start_date_utc} to {end_date_utc}")
+        return
 
     # Display the results and export file versions
     if not file_versions:

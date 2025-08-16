@@ -165,10 +165,12 @@ def parse_pse_file(input_file, rows, file_datetime):
         if(not outage_id):
             outage_id = get_attr(attributes, "Outage ID")
         if(not outage_id):
+            outage_id = get_attr(attributes, "Outage ID:")
+        if(not outage_id):
             # for a while, PSE used a blank attribute name for outage id
             outage_id = get_attr(attributes, "")
         if(not outage_id or not outage_id.startswith("INC")):
-            print(f"outage id {outage_id} does not start with INC, skipping")
+            print(f"outage id '{outage_id}' missing or does not start with INC, skipping")
             # TODO: decide on a consistent way to handle these types of things. Ignore the outage, ignore the file, neither?
             continue
 
@@ -236,7 +238,7 @@ def parse_scl_file(input_file, rows, file_datetime):
 
         row = {
             "outage_id": outage_id,
-            "snapshot_datetime": file_datetime,
+            "file_datetime": file_datetime,
             "start_time": pytz.timezone('US/Pacific').localize(datetime.fromtimestamp(start_time/1000)),
             "customers_impacted": customers_impacted,
             "status": status,
@@ -250,7 +252,16 @@ def parse_scl_file(input_file, rows, file_datetime):
         rows.append(row)
 
 def parse_snopud_file(input_file, rows, file_datetime):
-    root = parser.parse(input_file).getroot()
+    try:
+        root = parser.parse(input_file).getroot()
+    except Exception as e:
+        if "Document is empty" in str(e):
+            print(f"Empty XML document detected, skipping file.")
+            return
+        else:
+            # Re-raise other exceptions to see what's actually going wrong
+            raise e
+    
     for pm in root.Document.Folder.Placemark:
         # first get the raw data from the file
         outage_id= pm.name
@@ -282,6 +293,14 @@ def parse_snopud_file(input_file, rows, file_datetime):
         center_lon, center_lat, radius = smallest_enclosing_circle(polygons)
    
         pacific_timezone = pytz.timezone('US/Pacific')
+
+        # TODO: this timezone stuff is a mess. Modify so that all internal datetimes are in UTC
+        try:
+            est_restoration_time = datetime.fromisoformat(est_restoration_time.text).astimezone(pacific_timezone),
+        except Exception as e:    
+            print(f"error parsing est restoration time: {est_restoration_time.text}. Exception: {e}. \n Defaulting to None")
+            est_restoration_time = None
+
         row = {
             "outage_id": outage_id,
             "file_datetime": file_datetime,
@@ -289,7 +308,7 @@ def parse_snopud_file(input_file, rows, file_datetime):
             "customers_impacted": customers_impacted,
             "status": status,
             "cause": cause,
-            "est_restoration_time": datetime.fromisoformat(est_restoration_time.text).astimezone(pacific_timezone),
+            "est_restoration_time": "none" if est_restoration_time is None else est_restoration_time,
             "polygon_json": json.dumps(polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,
