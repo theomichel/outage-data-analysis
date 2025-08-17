@@ -13,6 +13,8 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 from datetime import timezone
 
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 def has_changes(series):
     return series.nunique() > 1
 
@@ -529,7 +531,7 @@ def main():
     polygon_change_ids = polygon_changes[polygon_changes].index.tolist()
     num_polygon_changes = len(polygon_change_ids)
     print(f"Number of outages with polygon changes: {num_polygon_changes}")
-    print(f"Outage IDs with polygon changes: {polygon_change_ids}")
+    #print(f"Outage IDs with polygon changes: {polygon_change_ids}")
 
     # 2. Outage Start Time changes
     start_time_changes = filtered_df.groupby("outage_id")["start_time"].agg(has_changes)
@@ -544,7 +546,7 @@ def main():
     filtered_df = filtered_df.sort_values(["outage_id", "file_datetime"]) 
 
     summary = (
-        filtered_df.groupby("outage_id", sort=False)
+        filtered_df.groupby(["utility","outage_id"], sort=False)
         .agg(
             first_start_time=("start_time", "first"),
             first_est_restoration_time_dt=("est_restoration_dt", first_valid),
@@ -561,14 +563,12 @@ def main():
     )
     
     # Parse start time and estimated restoration times as datetimes for calculations
-    summary["first_start_time_dt"] = pd.to_datetime(summary["first_start_time"], utc=True, format="%Y-%m-%d %H:%M:%S%z") #2025-02-27 20:49:32-08:00
-    summary["last_file_datetime"] = pd.to_datetime(summary["last_file_datetime"], utc=True, format="%Y-%m-%d %H:%M:%S%z") #2025-02-27 20:49:32-08:00
-    summary["first_est_restoration_time_dt"] = pd.to_datetime(summary["first_est_restoration_time_dt"], utc=True, format="%Y-%m-%d %H:%M:%S%z") #2025-02-27 20:49:32-08:00
-    summary["last_est_restoration_time_dt"] = pd.to_datetime(summary["last_est_restoration_time_dt"], utc=True, format="%Y-%m-%d %H:%M:%S%z") #2025-02-27 20:49:32-08:00
+    summary["first_start_time_dt"] = pd.to_datetime(summary["first_start_time"], utc=True, format=TIME_FORMAT)
+    summary["last_file_datetime"] = pd.to_datetime(summary["last_file_datetime"], utc=True, format=TIME_FORMAT)
+    summary["first_est_restoration_time_dt"] = pd.to_datetime(summary["first_est_restoration_time_dt"], utc=True, format=TIME_FORMAT)
+    summary["last_est_restoration_time_dt"] = pd.to_datetime(summary["last_est_restoration_time_dt"], utc=True, format=TIME_FORMAT)
 
     # calculate outage lengths
-    print(f"last_file_datetime: {summary['last_file_datetime']}")
-    print(f"first_start_time_dt: {summary['first_start_time_dt']}")
     summary["total_outage_length"] = summary["last_file_datetime"] - summary["first_start_time_dt"]
     summary["length_from_first_est_restoration"] = summary["first_est_restoration_time_dt"] - summary["first_start_time_dt"]
     summary["length_from_last_est_restoration"] = summary["last_est_restoration_time_dt"] - summary["first_start_time_dt"]
@@ -578,6 +578,7 @@ def main():
 
     # Reorder columns to put the important ones first
     first_cols = [
+        "utility",
         "outage_id",
         "first_start_time",
         "first_est_restoration_time_dt",

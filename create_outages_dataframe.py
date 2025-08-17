@@ -265,7 +265,6 @@ def parse_snopud_file(input_file, rows, file_datetime):
     
     for pm in root.Document.Folder.Placemark:
         # first get the raw data from the file
-        outage_id= pm.name
         start_time = find_element_in_kml_extended_data(pm.ExtendedData, "StartUTC")
         customers_impacted = find_element_in_kml_extended_data(pm.ExtendedData, "EstCustomersOut")
         status = find_element_in_kml_extended_data(pm.ExtendedData, "OutageStatus")
@@ -308,7 +307,8 @@ def parse_snopud_file(input_file, rows, file_datetime):
 
         row = {
             "utility": "snopud",
-            "outage_id": outage_id,
+            # unfortunately, snopud doesn't have a unique id for each outage, so we'll use the start datetime
+            "outage_id": datetime.fromisoformat(start_time.text).replace(tzinfo=None).strftime("%Y%m%d%H%M%S"),
             "file_datetime": file_datetime.strftime(OUTPUT_TIME_FORMAT),
             "start_time": datetime.fromisoformat(start_time.text).replace(tzinfo=None).strftime(OUTPUT_TIME_FORMAT),
             "customers_impacted": customers_impacted,
