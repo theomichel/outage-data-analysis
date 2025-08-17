@@ -272,6 +272,9 @@ def parse_snopud_file(input_file, rows, file_datetime):
         est_restoration_time = find_element_in_kml_extended_data(pm.ExtendedData, "EstimatedRestorationUTC")
         polygon = pm.Polygon.outerBoundaryIs.LinearRing.coordinates
 
+        # snopud doesn't have a unique id for each outage, so we'll use the place + start datetime
+        outage_id = str(pm.name) + datetime.fromisoformat(start_time.text).replace(tzinfo=None).strftime("%Y%m%d%H%M%S")
+
         # snopud sometimes leaves entries with -1 for customers impacted and invalid dates and other fields
         # I assume this either means they're still investigating, or they're just using placeholder data for some 
         # other reason. We'll just skip them
@@ -307,8 +310,7 @@ def parse_snopud_file(input_file, rows, file_datetime):
 
         row = {
             "utility": "snopud",
-            # unfortunately, snopud doesn't have a unique id for each outage, so we'll use the start datetime
-            "outage_id": datetime.fromisoformat(start_time.text).replace(tzinfo=None).strftime("%Y%m%d%H%M%S"),
+            "outage_id": outage_id,
             "file_datetime": file_datetime.strftime(OUTPUT_TIME_FORMAT),
             "start_time": datetime.fromisoformat(start_time.text).replace(tzinfo=None).strftime(OUTPUT_TIME_FORMAT),
             "customers_impacted": customers_impacted,
