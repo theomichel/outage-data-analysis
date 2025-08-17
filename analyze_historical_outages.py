@@ -153,7 +153,7 @@ def create_animated_outage_map(summary, animation_duration=30):
         return
     
     # Calculate time range
-    start_time = valid_outages['first_start_time_dt'].min()
+    start_time = valid_outages['first_start_time'].min()
     end_time = valid_outages['last_file_datetime'].max()
     total_duration = end_time - start_time
     
@@ -230,7 +230,7 @@ def create_animated_outage_map(summary, animation_duration=30):
         
         # Add circles for active outages
         for _, outage in valid_outages.iterrows():
-            outage_start = outage['first_start_time_dt']
+            outage_start = outage['first_start_time']
             outage_end = outage['last_file_datetime']
             
             # Check if outage is active at current time
@@ -283,7 +283,7 @@ def create_cumulative_polygon_animation(summary, animation_duration=30):
         return
     
     # Calculate time range
-    start_time = valid_outages['first_start_time_dt'].min()
+    start_time = valid_outages['first_start_time'].min()
     end_time = valid_outages['last_file_datetime'].max()
     total_duration = end_time - start_time
     
@@ -351,7 +351,7 @@ def create_cumulative_polygon_animation(summary, animation_duration=30):
                          outage_polygons.append({
                              'points': float_points,  # Store the converted float coordinates
                              'intensity': intensity,
-                             'start_time': outage['first_start_time_dt'],
+                             'start_time': outage['first_start_time'],
                              'outage_id': outage['outage_id'],
                              'polygon_id': f"{outage['outage_id']}_{polygon_idx}"  # Unique identifier
                          })
@@ -431,7 +431,7 @@ def create_cumulative_polygon_animation(summary, animation_duration=30):
 # gives a text report of how many outages in the given date range meet the given thresholds
 def analyze_recent_outage_impacts(summary, start_date_utc, end_date_utc=datetime.now(), min_customers_impacted=100, min_predicted_outage_length=timedelta(hours=6), min_actual_outage_length=timedelta(hours=1)):
     # filter summary to only include outages in the given date range
-    summary = summary[(summary['first_start_time_dt'] >= start_date_utc) & (summary['first_start_time_dt'] <= end_date_utc)]
+    summary = summary[(summary['first_start_time'] >= start_date_utc) & (summary['first_start_time'] <= end_date_utc)]
 
 
     # count the number of outages that meet the given thresholds
@@ -495,19 +495,21 @@ def main():
     else:
         print("Warning: No 'utility' column found in data")
 
-    # Add file_datetime column
-#    df['file_datetime'] = pd.to_datetime(df['file_datetime'], format="ISO8601") # %Y-%m-%dT%H%M%S%f
-    df = df.sort_values(["outage_id", "file_datetime"])
     
-    # Parse estimated restoration time to datetime, coercing invalid/empty to NaT
-    df["est_restoration_dt"] = pd.to_datetime(df["est_restoration_time"], errors="coerce")
+    # Force all time columns in the input to datetime, coercing invalid/empty to NaT
+    df["est_restoration_time"] = pd.to_datetime(df["est_restoration_time"], errors="coerce", utc=True, format=TIME_FORMAT)
+    df["start_time"] = pd.to_datetime(df["start_time"], errors="coerce", utc=True, format=TIME_FORMAT)
+    df["file_datetime"] = pd.to_datetime(df["file_datetime"], errors="coerce", utc=True, format=TIME_FORMAT)
+
+    df = df.sort_values(["utility","outage_id", "file_datetime"])
+
 
     # Find the earliest and latest update datetimes in the dataset
     min_file_datetime = df["file_datetime"].min()
     max_file_datetime = df["file_datetime"].max()
 
     # For each outage, get the first and last update datetimes
-    first_last = df.groupby("outage_id")["file_datetime"].agg(["first", "last"])
+    first_last = df.groupby(["utility","outage_id"])["file_datetime"].agg(["first", "last"])
 
     # Outages to exclude: those whose first update is at min or last update is at max
     to_exclude = first_last[(first_last["first"] == min_file_datetime) | (first_last["last"] == max_file_datetime)].index
@@ -549,8 +551,8 @@ def main():
         filtered_df.groupby(["utility","outage_id"], sort=False)
         .agg(
             first_start_time=("start_time", "first"),
-            first_est_restoration_time_dt=("est_restoration_dt", first_valid),
-            last_est_restoration_time_dt=("est_restoration_dt", last_valid),
+            first_est_restoration_time=("est_restoration_time", first_valid),
+            last_est_restoration_time=("est_restoration_time", last_valid),
             first_file_datetime=("file_datetime", "first"),
             last_file_datetime=("file_datetime", "last"),
             last_polygon_json=("polygon_json", "last"),
@@ -562,16 +564,19 @@ def main():
         .reset_index()
     )
     
+    print(f"last_file_datetime: {summary['last_file_datetime']}")
+
+
     # Parse start time and estimated restoration times as datetimes for calculations
-    summary["first_start_time_dt"] = pd.to_datetime(summary["first_start_time"], utc=True, format=TIME_FORMAT)
+    summary["first_start_time"] = pd.to_datetime(summary["first_start_time"], utc=True, format=TIME_FORMAT)
     summary["last_file_datetime"] = pd.to_datetime(summary["last_file_datetime"], utc=True, format=TIME_FORMAT)
-    summary["first_est_restoration_time_dt"] = pd.to_datetime(summary["first_est_restoration_time_dt"], utc=True, format=TIME_FORMAT)
-    summary["last_est_restoration_time_dt"] = pd.to_datetime(summary["last_est_restoration_time_dt"], utc=True, format=TIME_FORMAT)
+    summary["first_est_restoration_time"] = pd.to_datetime(summary["first_est_restoration_time"], utc=True, format=TIME_FORMAT)
+    summary["last_est_restoration_time"] = pd.to_datetime(summary["last_est_restoration_time"], utc=True, format=TIME_FORMAT)
 
     # calculate outage lengths
-    summary["total_outage_length"] = summary["last_file_datetime"] - summary["first_start_time_dt"]
-    summary["length_from_first_est_restoration"] = summary["first_est_restoration_time_dt"] - summary["first_start_time_dt"]
-    summary["length_from_last_est_restoration"] = summary["last_est_restoration_time_dt"] - summary["first_start_time_dt"]
+    summary["total_outage_length"] = summary["last_file_datetime"] - summary["first_start_time"]
+    summary["length_from_first_est_restoration"] = summary["first_est_restoration_time"] - summary["first_start_time"]
+    summary["length_from_last_est_restoration"] = summary["last_est_restoration_time"] - summary["first_start_time"]
 
     # Calculate difference between actual outage length and length as estimated from first est restoration, formatted as HH:MM
     summary["diff_actual_vs_first_est"] = (summary["total_outage_length"] - summary["length_from_first_est_restoration"]).apply(format_timedelta_hhmm)
@@ -581,7 +586,7 @@ def main():
         "utility",
         "outage_id",
         "first_start_time",
-        "first_est_restoration_time_dt",
+        "first_est_restoration_time",
         "total_outage_length",
         "length_from_first_est_restoration",
         "diff_actual_vs_first_est"

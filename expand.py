@@ -313,7 +313,8 @@ def main():
             
             # Create a safe filename with timestamp
             # Convert timestamp to a filename-safe format
-            safe_timestamp = version['timestamp'].strftime("%Y-%m-%dT%H%M%S")
+            print(f"version['timestamp']: {version['timestamp']}")
+            safe_timestamp = datetime.fromisoformat(version['timestamp']).strftime("%Y-%m-%dT%H%M%S")
             export_filename = f"{safe_timestamp}-{filename}"
             export_path = os.path.join(output_dir, export_filename)
             
