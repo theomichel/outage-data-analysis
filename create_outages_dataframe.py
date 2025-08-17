@@ -9,6 +9,9 @@ from dateutil.parser import parse as parse_dt
 from pykml import parser
 import math
 
+OUTPUT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+local_timezone = pytz.timezone('US/Pacific')
+
 # grab attributes from an array of attributes, because PSE's json does it that way
 def get_attr(attributes, attribute_name):
     for attr in attributes:
@@ -17,19 +20,6 @@ def get_attr(attributes, attribute_name):
         elif attr.get("Name") == attribute_name:
             return attr.get("Value")
     return None
-
-def convert_gmt_to_pst(input_datetime):
-    """Convert GMT date and time to PST"""
-    # Set timezone to GMT
-    gmt_tz = pytz.timezone('GMT')
-    gmt_dt = gmt_tz.localize(input_datetime)
-    
-    # Convert to PST
-    pst_tz = pytz.timezone('US/Pacific')
-    pst_dt = gmt_dt.astimezone(pst_tz)
-    
-    # Return date and time as strings
-    return pst_dt
 
 def find_element_in_kml_extended_data(extended_data, element_name):
     for data_element in extended_data.Data:
@@ -149,6 +139,9 @@ def smallest_enclosing_circle(array_of_arrays_of_points):
 
 def parse_pse_file(input_file, rows, file_datetime):
     print(f"Processing file: {file_datetime}")
+
+    pse_local_timeformat = "%m/%d %I:%M %p" # e.g. "02/24 06:30 PM"
+
     try:
         data = json.load(input_file)
     except Exception as e:
@@ -180,14 +173,18 @@ def parse_pse_file(input_file, rows, file_datetime):
         # check for both names for start time, est restoration time, and last updated
         if(not start_time_json):
             start_time_json = get_attr(attributes, "Start time")
-        start_time = parse_dt(start_time_json)
+        start_time = datetime.strptime(start_time_json, pse_local_timeformat)
+        # PSE omits the year from the start time, so we have to pick one. Assume it's the same year as the file
+        start_time = start_time.replace(year=file_datetime.year)
 
         est_restoration_time_json = get_attr(attributes, "Est. Restoration time")
         if(not est_restoration_time_json):
             est_restoration_time_json = get_attr(attributes, "Est. restoration time")
 
         try:
-            est_restoration_time = parse_dt(est_restoration_time_json)
+            est_restoration_time = datetime.strptime(est_restoration_time_json, pse_local_timeformat)
+            # PSE omits the year from the restoration time, so we have to pick one. Assume it's the same year as the file
+            est_restoration_time = est_restoration_time.replace(year=file_datetime.year)
         except Exception as e:    
             print(f"error parsing est restoration time: {est_restoration_time_json}. Exception: {e}Defaulting to None")
             est_restoration_time = None
@@ -205,13 +202,14 @@ def parse_pse_file(input_file, rows, file_datetime):
         center_lon, center_lat, radius = smallest_enclosing_circle(polygons)
         
         row = {
+            "utility": "pse",
             "outage_id": outage_id,
-            "file_datetime": file_datetime,
-            "start_time": pytz.timezone('US/Pacific').localize(start_time),
+            "file_datetime": file_datetime.strftime(OUTPUT_TIME_FORMAT),
+            "start_time": local_timezone.localize(start_time).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
             "customers_impacted": customers_impacted,
             "status": status,
             "cause": cause,
-            "est_restoration_time": "none" if est_restoration_time is None else pytz.timezone('US/Pacific').localize(est_restoration_time),
+            "est_restoration_time": "none" if est_restoration_time is None else local_timezone.localize(est_restoration_time).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
             "polygon_json": json.dumps(polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,
@@ -222,6 +220,7 @@ def parse_pse_file(input_file, rows, file_datetime):
 
 def parse_scl_file(input_file, rows, file_datetime):
     data = json.load(input_file)
+
     for outage in data:
         outage_id = outage.get("id")
         start_time = outage.get("startTime")
@@ -237,13 +236,15 @@ def parse_scl_file(input_file, rows, file_datetime):
         center_lon, center_lat, radius = smallest_enclosing_circle(polygons)
 
         row = {
+            "utility": "scl",
             "outage_id": outage_id,
             "file_datetime": file_datetime,
-            "start_time": pytz.timezone('US/Pacific').localize(datetime.fromtimestamp(start_time/1000)),
+            # SCL times are in PST as epoch time, so they need to be converted to UTC
+            "start_time": local_timezone.localize(datetime.fromtimestamp(start_time/1000)).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
             "customers_impacted": customers_impacted,
             "status": status,
             "cause": cause,
-            "est_restoration_time": pytz.timezone('US/Pacific').localize(datetime.fromtimestamp(est_restoration_time/1000)),
+            "est_restoration_time": local_timezone.localize(datetime.fromtimestamp(est_restoration_time/1000)).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
             "polygon_json": json.dumps(polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,
@@ -294,21 +295,26 @@ def parse_snopud_file(input_file, rows, file_datetime):
    
         pacific_timezone = pytz.timezone('US/Pacific')
 
-        # TODO: this timezone stuff is a mess. Modify so that all internal datetimes are in UTC
+        # snopud sometimes puts placeholder text in the est restoration time field, in which case we convert to none
         try:
-            est_restoration_time = datetime.fromisoformat(est_restoration_time.text).astimezone(pacific_timezone),
+            # otherwise, snopud times are TZ-aware UTC, and we want unaware UTC, so naivify!
+            est_restoration_time_string = datetime.fromisoformat(est_restoration_time.text).replace(tzinfo=None).strftime(OUTPUT_TIME_FORMAT)
+            print(f"est restoration time: {est_restoration_time_string}")
         except Exception as e:    
             print(f"error parsing est restoration time: {est_restoration_time.text}. Exception: {e}. \n Defaulting to None")
-            est_restoration_time = None
+            est_restoration_time_string = "None"
+
+        print(f"est restoration time: {est_restoration_time_string}")
 
         row = {
+            "utility": "snopud",
             "outage_id": outage_id,
-            "file_datetime": file_datetime,
-            "start_time": datetime.fromisoformat(start_time.text).astimezone(pacific_timezone),
+            "file_datetime": file_datetime.strftime(OUTPUT_TIME_FORMAT),
+            "start_time": datetime.fromisoformat(start_time.text).replace(tzinfo=None).strftime(OUTPUT_TIME_FORMAT),
             "customers_impacted": customers_impacted,
             "status": status,
             "cause": cause,
-            "est_restoration_time": "none" if est_restoration_time is None else est_restoration_time,
+            "est_restoration_time": est_restoration_time_string,
             "polygon_json": json.dumps(polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,
@@ -348,17 +354,17 @@ def main():
         basename = os.path.basename(file)
         date_time_part = basename.split(filename_suffix)[0]
         # TODO: for some reason, the first file created by expand.py has a slightly different format. Figure out why and address there?
+        # filenames are in GMT, stick with that throughout
         gmt_file_datetime = datetime.strptime(date_time_part, "%Y-%m-%dT%H%M%S%f")
-        # Convert GMT to PST
-        pst_file_datetime = convert_gmt_to_pst(gmt_file_datetime)
+
 
         with open(file, "r", encoding="utf-8") as f:
             if(args.utility == "pse"):
-                parse_pse_file(f, rows, pst_file_datetime)
+                parse_pse_file(f, rows, gmt_file_datetime)
             elif (args.utility == "scl"):
-                parse_scl_file(f, rows, pst_file_datetime)
+                parse_scl_file(f, rows, gmt_file_datetime)
             elif (args.utility == "snopud"):
-                parse_snopud_file(f, rows, pst_file_datetime)
+                parse_snopud_file(f, rows, gmt_file_datetime)
             else:
                 print("no utility specified, will not parse")
 

@@ -467,11 +467,31 @@ def analyze_outage_impacts_by_area(summary):
     pass
 
 def main():
-    parser = argparse.ArgumentParser(description="Analyze historical PSE outages.")
-    parser.add_argument('-f', '--file_input', type=str, default="outage_updates.csv", 
-                       help='Input file name (default: outage_updates.csv)')
+    parser = argparse.ArgumentParser(description="Analyze historical outages from multiple utilities.")
+    parser.add_argument('-f', '--files', nargs='+', required=True,
+                       help='Input CSV file(s) - can specify multiple files to combine')
     args = parser.parse_args()
-    df = pd.read_csv(args.file_input)
+    
+    # Read and combine multiple files
+    dfs = []
+    for file_path in args.files:
+        print(f"Reading {file_path}...")
+        df = pd.read_csv(file_path)
+        dfs.append(df)
+        print(f"  Loaded {len(df)} rows")
+    
+    # Combine all dataframes
+    df = pd.concat(dfs, ignore_index=True)
+    print(f"Combined total: {len(df)} rows from {len(args.files)} file(s)")
+    
+    # Show utility breakdown
+    if 'utility' in df.columns:
+        utility_counts = df['utility'].value_counts()
+        print(f"\nData by utility:")
+        for utility, count in utility_counts.items():
+            print(f"  {utility}: {count} rows ({count/len(df)*100:.1f}%)")
+    else:
+        print("Warning: No 'utility' column found in data")
 
     # Add file_datetime column
 #    df['file_datetime'] = pd.to_datetime(df['file_datetime'], format="ISO8601") # %Y-%m-%dT%H%M%S%f
@@ -496,6 +516,13 @@ def main():
     # Total number of unique outages (after filtering)
     total_outages = filtered_df["outage_id"].nunique()
     print(f"Total number of outages analyzed (excluding edge cases): {total_outages}")
+    
+    # Show utility breakdown for filtered outages
+    if 'utility' in filtered_df.columns:
+        utility_outage_counts = filtered_df.groupby('utility')['outage_id'].nunique()
+        print(f"\nOutages by utility (after filtering):")
+        for utility, count in utility_outage_counts.items():
+            print(f"  {utility}: {count} outages ({count/total_outages*100:.1f}%)")
 
     # 1. Polygon or Bounding Box changes
     polygon_changes = filtered_df.groupby("outage_id")["polygon_json"].agg(has_changes)
@@ -534,10 +561,10 @@ def main():
     )
     
     # Parse start time and estimated restoration times as datetimes for calculations
-    summary["first_start_time_dt"] = pd.to_datetime(summary["first_start_time"], utc=True)
-    summary["last_file_datetime"] = pd.to_datetime(summary["last_file_datetime"], utc=True)
-    summary["first_est_restoration_time_dt"] = pd.to_datetime(summary["first_est_restoration_time_dt"], utc=True)
-    summary["last_est_restoration_time_dt"] = pd.to_datetime(summary["last_est_restoration_time_dt"], utc=True)
+    summary["first_start_time_dt"] = pd.to_datetime(summary["first_start_time"], utc=True, format="%Y-%m-%d %H:%M:%S%z") #2025-02-27 20:49:32-08:00
+    summary["last_file_datetime"] = pd.to_datetime(summary["last_file_datetime"], utc=True, format="%Y-%m-%d %H:%M:%S%z") #2025-02-27 20:49:32-08:00
+    summary["first_est_restoration_time_dt"] = pd.to_datetime(summary["first_est_restoration_time_dt"], utc=True, format="%Y-%m-%d %H:%M:%S%z") #2025-02-27 20:49:32-08:00
+    summary["last_est_restoration_time_dt"] = pd.to_datetime(summary["last_est_restoration_time_dt"], utc=True, format="%Y-%m-%d %H:%M:%S%z") #2025-02-27 20:49:32-08:00
 
     # calculate outage lengths
     print(f"last_file_datetime: {summary['last_file_datetime']}")

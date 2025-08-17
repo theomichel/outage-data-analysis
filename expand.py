@@ -99,6 +99,7 @@ def count_versions(repo_path, rel_path, count, branch='main'):
     Returns the count of versions found.
     """
     repo = git.Repo(repo_path)
+    repo.git.pull()
     
     # Use repo.git.log with proper parameters
     result = repo.git.log(
@@ -121,6 +122,46 @@ def count_versions(repo_path, rel_path, count, branch='main'):
     return version_count
 
 
+def find_latest_exported_file(output_dir, base_filename):
+    """
+    Find the latest exported file in the output directory based on the timestamp in the filename.
+    Returns the datetime of the latest file, or None if no files found.
+    Files are expected to be in format: TIMESTAMP-filename where TIMESTAMP is from safe_timestamp regex.
+    """
+    if not os.path.exists(output_dir):
+        return None
+    
+    latest_datetime = None
+    latest_file = None
+    
+    # Look for files that match the export pattern: timestamp-filename
+    for filename in os.listdir(output_dir):
+        if filename.endswith(f"-{base_filename}"):
+            # Extract timestamp part (everything before the last occurrence of -filename)
+            timestamp_part = filename[:-len(f"-{base_filename}")]
+            
+            # The script creates files with safe_timestamp = re.sub(r'[^0-9T-]', '', version['timestamp'])
+            # So we need to reconstruct the original timestamp format
+            # Expected format: YYYY-MM-DDTHHMMSS0000 (colons and + removed by regex)
+            if len(timestamp_part) >= 17:  # At minimum YYYY-MM-DDTHHMMSS
+                # Reconstruct the ISO format by adding back the + and colons for timezone
+                iso_timestamp = f"{timestamp_part}+0000" if len(timestamp_part) == 17 else f"{timestamp_part[:17]}+{timestamp_part[17:]}"
+                
+                try:
+                    file_datetime = datetime.strptime(iso_timestamp, "%Y-%m-%dT%H%M%S%z") # 2025-02-28T0353340000
+                    if latest_datetime is None or file_datetime > latest_datetime:
+                        latest_datetime = file_datetime
+                        latest_file = filename
+                except ValueError as e:
+                    raise ValueError(f"Failed to parse timestamp from exported file '{filename}': {e}")
+    
+    if latest_datetime:
+        print(f"Found latest exported file: {latest_file} (timestamp: {latest_datetime})")
+        return latest_datetime
+    else:
+        return None
+
+
 def main():
     """
     Main function to run the script from the command line.
@@ -136,17 +177,39 @@ def main():
     parser.add_argument('--count-only', '-c', action='store_true', help='Only count the number of versions available, do not export files')
     parser.add_argument('--start-datetime', '-s', help='Start date/time (UTC) to filter by in YYYY-MM-DDTHH:MM:SS-Z format (default: all time)')
     parser.add_argument('--end-datetime', '-e', help='End date/time (UTC) to filter by in YYYY-MM-DDTHH:MM:SS-Z format (default: all time)')
+    parser.add_argument('--incremental', '-i', action='store_true', help='Use the timestamp of the latest exported file as start datetime and now as end datetime')
     args = parser.parse_args()
 
-    if args.start_datetime:
-        start_date_utc = datetime.strptime(args.start_datetime, DATE_TIME_FORMAT)
-    else:
-        start_date_utc = datetime.min.replace(tzinfo=timezone.utc)
+    # Set up output directory early so we can check for existing files
+    output_dir = args.output_dir or os.getcwd()
+    filename = os.path.basename(args.path)
 
-    if args.end_datetime:
-        end_date_utc = datetime.strptime(args.end_datetime, DATE_TIME_FORMAT)
-    else:
+    # Handle incremental mode
+    if args.incremental:
+        if args.start_datetime or args.end_datetime:
+            print("Warning: --incremental flag overrides --start-datetime and --end-datetime arguments")
+        
+        latest_file_datetime = find_latest_exported_file(output_dir, filename)
+        if latest_file_datetime:
+            start_date_utc = latest_file_datetime
+            print(f"Incremental mode: Starting from {start_date_utc}")
+        else:
+            print("No existing exported files found. Using all time as starting point.")
+            start_date_utc = datetime.min.replace(tzinfo=timezone.utc)
+        
         end_date_utc = datetime.now(timezone.utc)
+        print(f"Incremental mode: Ending at {end_date_utc}")
+    else:
+        # Normal datetime handling
+        if args.start_datetime:
+            start_date_utc = datetime.strptime(args.start_datetime, DATE_TIME_FORMAT)
+        else:
+            start_date_utc = datetime.min.replace(tzinfo=timezone.utc)
+
+        if args.end_datetime:
+            end_date_utc = datetime.strptime(args.end_datetime, DATE_TIME_FORMAT)
+        else:
+            end_date_utc = datetime.now(timezone.utc)
 
     # Get the file path and make it absolute
     file_path = os.path.abspath(args.path)
@@ -173,13 +236,11 @@ def main():
     # Get the relative path of the file within the repository
     rel_path = os.path.relpath(file_path, repo_path)
     
-    # Set up output directory
-    output_dir = args.output_dir or os.getcwd()
+    # Ensure output directory exists
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    # Get the filename and extension for naming exported files
-    filename = os.path.basename(file_path)
+    # Get the filename and extension for naming exported files (filename already set earlier)
     name, ext = os.path.splitext(filename)
     
     print(f"Analyzing version history for: {rel_path}")
@@ -196,14 +257,17 @@ def main():
     repo = git.Repo(repo_path)
     print(f"using repo path: {repo_path}")
 
+    repo.git.pull()
+
     if args.limit and args.limit > 0:
         print(f"Limiting to the last {args.limit} commits.")
     else:
         args.limit = -1
         print(f"no limit specified, analyzing all versions.")
 
-    # Handle count-only mode
-    if args.count_only and args.start_datetime is None and args.end_datetime is None:
+    # Handle count-only mode without date filtering (only when no incremental and no explicit dates)
+    # TODO: move this up so that all the argument interaction is handled in one place
+    if args.count_only and not args.incremental and args.start_datetime is None and args.end_datetime is None:
         print(f"Counting versions of {rel_path}...")
         version_count = count_versions(repo_path, rel_path, args.limit, args.branch)
         print(f"Found {version_count} versions of '{rel_path}' in branch '{args.branch}'")
@@ -249,7 +313,7 @@ def main():
             
             # Create a safe filename with timestamp
             # Convert timestamp to a filename-safe format
-            safe_timestamp = re.sub(r'[^0-9T-]', '', version['timestamp'])
+            safe_timestamp = version['timestamp'].strftime("%Y-%m-%dT%H%M%S")
             export_filename = f"{safe_timestamp}-{filename}"
             export_path = os.path.join(output_dir, export_filename)
             
