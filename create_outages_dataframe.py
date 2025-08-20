@@ -8,6 +8,8 @@ import argparse
 from dateutil.parser import parse as parse_dt
 from pykml import parser
 import math
+import logging 
+
 
 OUTPUT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 local_timezone = pytz.timezone('US/Pacific')
@@ -138,8 +140,6 @@ def smallest_enclosing_circle(array_of_arrays_of_points):
     return c
 
 def parse_pse_file(input_file, rows, file_datetime):
-    print(f"Processing file: {file_datetime}")
-
     pse_local_timeformat = "%m/%d %I:%M %p" # e.g. "02/24 06:30 PM"
 
     try:
@@ -301,12 +301,10 @@ def parse_snopud_file(input_file, rows, file_datetime):
         try:
             # otherwise, snopud times are TZ-aware UTC, and we want unaware UTC, so naivify!
             est_restoration_time_string = datetime.fromisoformat(est_restoration_time.text).replace(tzinfo=None).strftime(OUTPUT_TIME_FORMAT)
-            print(f"est restoration time: {est_restoration_time_string}")
+            logging.info(f"est restoration time: {est_restoration_time_string}")
         except Exception as e:    
             print(f"error parsing est restoration time: {est_restoration_time.text}. Exception: {e}. \n Defaulting to None")
             est_restoration_time_string = "None"
-
-        print(f"est restoration time: {est_restoration_time_string}")
 
         row = {
             "utility": "snopud",
@@ -329,8 +327,14 @@ def main():
     parser.add_argument('-d', '--directory', type=str, default='.', help='Directory containing files that match the pattern')
     parser.add_argument('-u', '--utility', type=str, required=True, help='Utility that the input came from. Values are pse, scl, or snopud')
     parser.add_argument('-s', '--singlefile', type=str, help='Special case for loading a single file. If provided, will ignore the directory argument.')
+    parser.add_argument('-l', '--latestfiles', action='store_true', help='Process the two most recent files in the directory. Can only be used with --directory.')
     parser.add_argument('-o', '--output_file', type=str, help='output file name. If not provided, will default to outage_updates.csv')
     args = parser.parse_args()
+
+    # Validation: --latestfiles can only be used with --directory (not with --singlefile)
+    if args.latestfiles and args.singlefile:
+        print("Error: --latestfiles cannot be used with --singlefile")
+        return
 
     # set up the filename suffix based on utility. We'll use this to help parse the date/time of
     # the update out of the file name
@@ -344,14 +348,32 @@ def main():
     # pattern used to find all the files
     if (args.singlefile):
         PATTERN = args.singlefile
+        files = [PATTERN]
     else:
         PATTERN = os.path.join(args.directory, "*"+filename_suffix)
-    print(f"file pattern {PATTERN}")
-    files = sorted(glob.glob(PATTERN))
+        print(f"file pattern {PATTERN}")
+        all_files = sorted(glob.glob(PATTERN), reverse=True)
+        
+        if args.latestfiles:
+            # Find the two most recent files by datetime embedded in filename
+            if len(all_files) >= 2:
+                files = all_files[:2]
+                print(f"Processing the 2 most recent files (by filename datetime):")
+                for i, file in enumerate(files, 1):
+                    print(f"{i}. {os.path.basename(file)}")
+            elif len(all_files) == 1:
+                files = all_files
+                print(f"Only 1 file found, processing: {os.path.basename(all_files[0])}")
+            else:
+                files = []
+                print("No files found matching pattern")
+        else:
+            files = all_files
     rows = []
 
     for file in files:
         # Extract date and time from filename
+        print(f"==============================================================================")
         print(f"processing file {file}")
         basename = os.path.basename(file)
         date_time_part = basename.split(filename_suffix)[0]

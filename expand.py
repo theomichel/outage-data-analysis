@@ -16,7 +16,7 @@ DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 EMPTY_TREE_SHA   = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 
-def versions(path, count, branch='main'):
+def versions(path, count, branch='origin/main'):
     """
     This function returns a generator which iterates through all commits of
     the repository located in the given path for the given branch. It yields
@@ -287,7 +287,7 @@ def main():
             timestamp_dt = timestamp_dt.replace(tzinfo=timezone.utc)
         else:
             timestamp_dt = timestamp_dt.astimezone(timezone.utc)
-        if stats['object'].endswith(rel_path) and timestamp_dt >= start_date_utc and timestamp_dt <= end_date_utc:
+        if stats['object'].endswith(rel_path) and timestamp_dt > start_date_utc and timestamp_dt <= end_date_utc:
             file_versions.append(stats)
 
     if args.count_only:
@@ -296,7 +296,7 @@ def main():
 
     # Display the results and export file versions
     if not file_versions:
-        print(f"No version history found for '{rel_path}' in branch '{args.branch}'.")
+        print(f"No version history found for '{rel_path}' in branch '{args.branch}' based on date range {start_date_utc} to {end_date_utc}.")
     else:
         print(f"Found {len(file_versions)} versions:")
         for i, version in enumerate(file_versions, 1):
