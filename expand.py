@@ -16,16 +16,13 @@ DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 EMPTY_TREE_SHA   = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 
-def versions(path, count, branch='origin/main'):
+def versions(path, count, branch='origin/main', repo=None):
     """
     This function returns a generator which iterates through all commits of
     the repository located in the given path for the given branch. It yields
     file diff information to show a timeseries of file changes.
     """
 
-    # Create the repository, raises an error if it isn't one.
-    repo = git.Repo(path)
-    assert not repo.bare
 
     # Iterate through the first N commits for the given branch in the repository
     # all indications are that they are in reverse chronological order by default
@@ -64,6 +61,7 @@ def versions(path, count, branch='origin/main'):
             })
 
             yield stats
+
 
 
 def diff_size(diff):
@@ -156,7 +154,6 @@ def find_latest_exported_file(output_dir, base_filename):
                     raise ValueError(f"Failed to parse timestamp from exported file '{filename}': {e}")
     
     if latest_datetime:
-        print(f"Found latest exported file: {latest_file} (timestamp: {latest_datetime})")
         return latest_datetime
     else:
         return None
@@ -178,11 +175,14 @@ def main():
     parser.add_argument('--start-datetime', '-s', help='Start date/time (UTC) to filter by in YYYY-MM-DDTHH:MM:SS-Z format (default: all time)')
     parser.add_argument('--end-datetime', '-e', help='End date/time (UTC) to filter by in YYYY-MM-DDTHH:MM:SS-Z format (default: all time)')
     parser.add_argument('--incremental', '-i', action='store_true', help='Use the timestamp of the latest exported file as start datetime and now as end datetime')
+    parser.add_argument('--mock', action='store_true', help='Use mock git data for testing')
     args = parser.parse_args()
 
     # Set up output directory early so we can check for existing files
     output_dir = args.output_dir or os.getcwd()
     filename = os.path.basename(args.path)
+
+    print(f"====== expand.py starting for file =======")
 
     # Handle incremental mode
     if args.incremental:
@@ -214,7 +214,7 @@ def main():
     # Get the file path and make it absolute
     file_path = os.path.abspath(args.path)
     
-    if not os.path.exists(file_path):
+    if not args.mock and not os.path.exists(file_path):
         print(f"Error: File '{file_path}' does not exist.")
         sys.exit(1)
     
@@ -253,9 +253,14 @@ def main():
         print(f"Exporting file versions to: {output_dir}")
     print("-" * 80)
     
-    # Create the repository object
-    repo = git.Repo(repo_path)
-    print(f"using repo path: {repo_path}")
+    # Create the repository object (real or mock)
+    if args.mock:
+        print("Using mock git repository for testing")
+        from git_mock import MockRepo
+        repo = MockRepo(repo_path)
+        # Mock pull is handled by MockGit
+    else:
+        repo = git.Repo(repo_path)
 
     repo.git.pull()
 
@@ -279,7 +284,9 @@ def main():
     # while doing so, filter by date
     file_versions = []
     print(f"iterating through versions of {rel_path}.")
-    for stats in versions(repo_path, args.limit, args.branch):
+    
+    # Pass the repo object if we have one (for mocking), otherwise let versions() create its own
+    for stats in versions(repo_path, args.limit, args.branch, repo):
         # Convert timestamp string back to datetime for comparison
         timestamp_dt = datetime.strptime(stats['timestamp'], DATE_TIME_FORMAT)
         # Convert to UTC for consistent timezone-aware comparison
@@ -295,6 +302,7 @@ def main():
         return
 
     # Display the results and export file versions
+    files_exported = 0
     if not file_versions:
         print(f"No version history found for '{rel_path}' in branch '{args.branch}' based on date range {start_date_utc} to {end_date_utc}.")
     else:
@@ -328,12 +336,27 @@ def main():
                     f.write(file_content)
                 
                 print(f"   Exported to: {export_filename}")
+                files_exported += 1
             except git.exc.GitCommandError:
                 print(f"   Could not export file at this commit (possibly binary or renamed)")
             except Exception as e:
-                print(f"   Error exporting file: {str(e)}")
+                # Handle mock git errors or other exceptions
+                if "MockGitCommandError" in str(type(e)):
+                    print(f"   Could not export file at this commit (possibly binary or renamed)")
+                else:
+                    print(f"   Error exporting file: {str(e)}")
             
             print()
+    
+    print(f"====== expand.py completed: {files_exported} files exported =======")
+    
+    # Exit with appropriate code based on whether new data was found
+    if files_exported > 0:
+        print("Exiting with code 0 (new data processed)")
+        sys.exit(0)  # Success - new data was processed
+    else:
+        print("Exiting with code 1 (no new data)")
+        sys.exit(1)  # No new data found
 
 
 if __name__ == "__main__":

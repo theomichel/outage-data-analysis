@@ -3,9 +3,7 @@ from datetime import datetime
 import argparse
 import json
 import math
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import requests
 import os
 
 def calculate_expected_length_minutes(start_time, est_restoration_time):
@@ -36,6 +34,8 @@ def calculate_active_duration_minutes(start_time, current_time):
     Returns the difference between current time and start time.
     """
     try:        
+        print(f"start_time: {start_time}")
+        print(f"current_time: {current_time}")
         # Convert to datetime if it's a string
         start_time = pd.to_datetime(start_time)
         current_time = pd.to_datetime(current_time)
@@ -47,105 +47,119 @@ def calculate_active_duration_minutes(start_time, current_time):
         print(f"Error calculating active duration: {e}")
         return None
 
-def send_notification(notification_data, file_input, thresholds):
+def send_telegram_message(token, chat_id, message, thread_id=None):
+    """Sends a message to a specified Telegram chat."""
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    params = {
+        "chat_id": chat_id,
+        "text": message
+    }
+    if thread_id:
+        params["message_thread_id"] = thread_id
+    try:
+        response = requests.post(url, params=params)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        print("Telegram message sent successfully!")
+        return True
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending Telegram message: {e}")
+        return False
+
+def send_notification(notification_data, file_input, thresholds, bot_token=None, chat_id=None, thread_id=None):
     """
-    Send email notification about outages that meet the threshold criteria.
+    Send Telegram notification about outages that meet the threshold criteria.
     notification_data contains: new_outages, resolved_outages, new_customers, resolved_customers
     """
     try:
-        # Email configuration - using environment variables for security
-        # smtp_server = os.getenv('SMTP_SERVER', 'localhost')
-        # smtp_port = int(os.getenv('SMTP_PORT', '587'))
-        # smtp_user = os.getenv('SMTP_USER', '')
-        # smtp_password = os.getenv('SMTP_PASSWORD', '')
-        # from_email = os.getenv('FROM_EMAIL', smtp_user)
-        
         new_outages = notification_data['new_outages']
         resolved_outages = notification_data['resolved_outages']
         new_customers = notification_data['new_customers']
         resolved_customers = notification_data['resolved_customers']
         
-        if not new_outages.empty or not resolved_outages.empty:
-            # Create email content
-            # msg = MIMEMultipart()
-            # msg['From'] = from_email
-            # msg['To'] = ', '.join(email_addresses)
-            # msg['Subject'] = f"Outage Alert: {len(outages_df)} outages meeting threshold criteria"
+        messages_to_send = []
+        
+        # Create separate notification for new outages
+        if not new_outages.empty:
+            new_message = f"🚨 **NEW OUTAGE ALERT**\n\n"
+            new_message += f"📈 **{len(new_outages)} new outage(s) detected**\n"
+            new_message += f"👥 **{new_customers:,.0f} customers affected**\n\n"
             
-                        # Create notification body
-            total_new = len(new_outages)
-            total_resolved = len(resolved_outages)
+            # Add details for each new outage
+            for i, (_, outage) in enumerate(new_outages.iterrows()):
+                if i >= 10:  # Limit to first 10 outages to avoid message length issues
+                    new_message += f"... and {len(new_outages) - 10} more outages\n"
+                    break
+                
+                print(f"outage: {outage}")
+
+                elapsed_hours = outage['elapsed_time_minutes'] / 60
+                
+                new_message += f"🔴 **{outage['outage_id']}**\n"
+                new_message += f"  👥 {outage['customers_impacted']:,.0f} customers\n"
+                new_message += f"  ⏱️ {elapsed_hours:.1f}h elapsed\n"
+                new_message += f"  📍 Status: {outage['status']}\n"
+                new_message += f"  ⚠️ Cause: {outage['cause']}\n"
+                
+                # Add location if available
+                if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
+                    maps_url = f"https://maps.google.com/maps?q={outage['center_lat']:.6f},{outage['center_lon']:.6f}"
+                    new_message += f"  🗺️ Location: [{outage['center_lat']:.4f}, {outage['center_lon']:.4f}]({maps_url})\n"
+                
+                new_message += "\n"
             
-            body = f"""
-Outage Analysis Alert
-====================
+            new_message += f"🕐 Alert generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            messages_to_send.append(('new', new_message))
 
-Analysis of: {file_input}
-Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-Summary:
-- New outages meeting criteria: {total_new}
-- New customers affected: {new_customers:,.0f}
-- Resolved outages: {total_resolved}
-- Customers restored: {resolved_customers:,.0f}
-
-Thresholds Applied:
-- Expected length: {thresholds['length']} hours
-- Customer impact: {thresholds['customers']} customers
-- Elapsed time: {thresholds['elapsed']} hours
-
-"""
+        # Create separate notification for resolved outages  
+        if not resolved_outages.empty:
+            resolved_message = f"✅ **OUTAGE RESOLVED ALERT**\n\n"
+            resolved_message += f"📉 **{len(resolved_outages)} outage(s) resolved**\n"
+            resolved_message += f"👥 **{resolved_customers:,.0f} customers restored**\n\n"
             
-            # Add details for new outages
-            if not new_outages.empty:
-                body += "\nNEW OUTAGES:\n"
-                for _, outage in new_outages.iterrows():
-                    elapsed_hours = outage['elapsed_time_minutes'] / 60
-                    expected_hours = outage['expected_length_minutes'] / 60 if pd.notna(outage['expected_length_minutes']) else 'N/A'
+            # Add details for each resolved outage
+            for i, (_, outage) in enumerate(resolved_outages.iterrows()):
+                if i >= 10:  # Limit to first 10 outages
+                    resolved_message += f"... and {len(resolved_outages) - 10} more outages\n"
+                    break
                     
-                    body += f"""
-- Outage ID: {outage['outage_id']}
-  Customers: {outage['customers_impacted']:,.0f}
-  Started: {outage['start_time']}
-  Elapsed: {elapsed_hours:.1f} hours
-  Expected Duration: {expected_hours} hours
-  Location: ({outage['center_lat']:.4f}, {outage['center_lon']:.4f})
-"""
-
-            # Add details for resolved outages
-            if not resolved_outages.empty:
-                body += "\nRESOLVED OUTAGES:\n"
-                for _, outage in resolved_outages.iterrows():
-                    body += f"""
-- Outage ID: {outage['outage_id']}
-  Customers: {outage['customers_impacted']:,.0f}
-  Started: {outage['start_time']}
-  Location: ({outage['center_lat']:.4f}, {outage['center_lon']:.4f})
-"""
-            # msg.attach(MIMEText(body, 'plain'))
+                resolved_message += f"✅ **{outage['outage_id']}**\n"
+                resolved_message += f"  👥 {outage['customers_impacted']:,.0f} customers restored\n"
+                resolved_message += f"  📍 Last status: {outage['status']}\n"
+                resolved_message += f"  ⚠️ Cause: {outage['cause']}\n"
+                
+                # Add location if available
+                if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
+                    maps_url = f"https://maps.google.com/maps?q={outage['center_lat']:.6f},{outage['center_lon']:.6f}"
+                    resolved_message += f"  🗺️ Location: [{outage['center_lat']:.4f}, {outage['center_lon']:.4f}]({maps_url})\n"
+                
+                resolved_message += "\n"
             
-            # Send email
-            # if smtp_user and smtp_password:
-            #     server = smtplib.SMTP(smtp_server, smtp_port)
-            #     server.starttls()
-            #     server.login(smtp_user, smtp_password)
-            #     text = msg.as_string()
-            #     server.sendmail(from_email, email_addresses, text)
-            #     server.quit()
-            #     print(f"Email notification sent to: {', '.join(email_addresses)}")
-            # else:
-            #     print("Email credentials not configured. Set SMTP_USER and SMTP_PASSWORD environment variables.")
+            resolved_message += f"🕐 Alert generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            messages_to_send.append(('resolved', resolved_message))
+        
+        # Send each message separately
+        for msg_type, message in messages_to_send:
+            # Send Telegram notification if credentials provided
+            if bot_token and chat_id:
+                success = send_telegram_message(bot_token, chat_id, message, thread_id)
+                if success:
+                    print(f"Telegram {msg_type} outage notification sent to chat {chat_id}" + (f" (thread {thread_id})" if thread_id else ""))
+                else:
+                    print(f"Failed to send Telegram {msg_type} outage notification")
+            else:
+                print("Telegram credentials not provided, skipping notification")
                 
             # Save notification to timestamped file
-            notification_filename = f"notification_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            notification_filename = f"notification_{msg_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
             with open(notification_filename, 'w') as f:
-                f.write(body)
-            print(f"Notification saved to: {notification_filename}")
-        else:
-            print("No outages meeting criteria - no email sent.")
+                f.write(message)
+            print(f"{msg_type.capitalize()} outage notification saved to: {notification_filename}")
+        
+        if not messages_to_send:
+            print("No outages meeting criteria - no notification sent.")
             
     except Exception as e:
-        print(f"Error sending email notification: {e}")
+        print(f"Error sending notification: {e}")
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze current PSE outages.")
@@ -157,12 +171,18 @@ def main():
                        help='Customers affected threshold  (default: 0)')
     parser.add_argument('-e', '--elapsed_time_threshold', type=float, default=0.0, 
                        help='Minimum elapsed time threshold in hours (default: 0.0)')
-    parser.add_argument('--email', nargs='+', 
-                       help='Email addresses to notify if outages meet threshold criteria (space-separated)')
     parser.add_argument('-u', '--utility', type=str, required=True,
                        help='utility, for now only used in output file naming')
+    parser.add_argument('--telegram-token', type=str,
+                       help='Telegram bot token for notifications')
+    parser.add_argument('--telegram-chat-id', type=str,
+                       help='Telegram chat ID for notifications')
+    parser.add_argument('--telegram-thread-id', type=str,
+                       help='Telegram thread ID for notifications (optional)')
     args = parser.parse_args()
     
+    print(f"====== analyze_current_outages.py starting for utility {args.utility} =======")
+
     # Convert thresholds from hours to minutes
     threshold_minutes = args.length_threshold * 60
     elapsed_time_threshold_minutes = args.elapsed_time_threshold * 60
@@ -210,11 +230,15 @@ def main():
             axis=1
         )
         
+        print(f"latest_outages_df: {latest_outages_df}")
+
         # Filter latest outages that exceed the thresholds
         significant_latest = latest_outages_df[latest_outages_df['expected_length_minutes'] > threshold_minutes]
         significant_latest = significant_latest[significant_latest['customers_impacted'] > args.customer_threshold]
         significant_latest = significant_latest[significant_latest['elapsed_time_minutes'] > elapsed_time_threshold_minutes]
         
+        print(f"significant_latest: {significant_latest}")
+
         # Only alert on truly NEW outages (not present in previous snapshot)
         if not previous_outages_df.empty:
             previous_outage_ids = set(previous_outages_df['outage_id'].unique())
@@ -281,6 +305,8 @@ def main():
             'start_time',
             'expected_length_minutes',
             'elapsed_time_minutes',
+            'status',
+            'cause',
             'center_lon',
             'center_lat',
             'radius',
@@ -294,6 +320,8 @@ def main():
             'start_time',
             'expected_length_minutes',
             'elapsed_time_minutes',
+            'status',
+            'cause',
             'center_lon',
             'center_lat',
             'radius',
@@ -319,7 +347,7 @@ def main():
     if(len(current_outages) > 0):
         print("WE HAVE OUTAGES!!!")
 
-    # Send email notification if there are new outages or resolved outages
+    # Send notification if there are new outages or resolved outages
     if len(current_outages) > 0 or len(resolved_outages) > 0:
         thresholds = {
             'length': args.length_threshold,
@@ -333,7 +361,9 @@ def main():
             'new_customers': total_customers,
             'resolved_customers': resolved_outages['customers_impacted'].sum() if not resolved_outages.empty else 0
         }
-        send_notification(notification_data, args.file_input, thresholds)
+        send_notification(notification_data, args.file_input, thresholds, args.telegram_token, args.telegram_chat_id, args.telegram_thread_id)
+
+    print(f"====== analyze_current_outages.py completed =======")
 
 if __name__ == "__main__":
     main()

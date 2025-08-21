@@ -145,7 +145,7 @@ def parse_pse_file(input_file, rows, file_datetime):
     try:
         data = json.load(input_file)
     except Exception as e:
-        print(f"error parsing pse file: {input_file}. Defaulting to empty list")
+        print(f"error parsing pse file: {input_file}. Defaulting to empty list. Exception: {e}")
         data = []
         return
 
@@ -331,6 +331,8 @@ def main():
     parser.add_argument('-o', '--output_file', type=str, help='output file name. If not provided, will default to outage_updates.csv')
     args = parser.parse_args()
 
+    print(f"====== create_outages_dataframe.py starting =======")
+
     # Validation: --latestfiles can only be used with --directory (not with --singlefile)
     if args.latestfiles and args.singlefile:
         print("Error: --latestfiles cannot be used with --singlefile")
@@ -373,8 +375,8 @@ def main():
 
     for file in files:
         # Extract date and time from filename
-        print(f"==============================================================================")
-        print(f"processing file {file}")
+        print(f"====== starting processing for file =======")
+        print(f"file: {file}")
         basename = os.path.basename(file)
         date_time_part = basename.split(filename_suffix)[0]
         # TODO: for some reason, the first file created by expand.py has a slightly different format. Figure out why and address there?
@@ -392,6 +394,9 @@ def main():
             else:
                 print("no utility specified, will not parse")
 
+        print(f"====== completed processing for file =======")
+
+
     # Create DataFrame
     if rows:
         df = pd.DataFrame(rows)
@@ -400,6 +405,8 @@ def main():
         print(f"Aggregated {len(df)} outage updates into {out_csv}")
     else:
         print("No outage data found to aggregate.")
+
+    print(f"====== create_outages_dataframe.py completed =======")
 
 if __name__ == "__main__":
     main()
