@@ -13,8 +13,8 @@ param(
 $sleepSeconds = $SleepMinutes * 60
 
 # Analysis thresholds (will be moved to arguments later)
-$EXPECTED_LENGTH_THRESHOLD_HOURS = 1
-$CUSTOMER_THRESHOLD = 5
+$EXPECTED_LENGTH_THRESHOLD_HOURS = 4
+$CUSTOMER_THRESHOLD = 100
 $ELAPSED_TIME_THRESHOLD_HOURS = 0.25
 
 Write-Host "Starting continuous outage monitoring..." -ForegroundColor Green
