@@ -269,6 +269,9 @@ def parse_snopud_file(input_file, rows, file_datetime, is_from_most_recent=True)
             # Re-raise other exceptions to see what's actually going wrong
             raise e
     
+    # Collect all placemark data into a list for DataFrame creation
+    placemark_data = []
+    
     for pm in root.Document.Folder.Placemark:
         # first get the raw data from the file
         start_time = find_element_in_kml_extended_data(pm.ExtendedData, "StartUTC")
@@ -278,56 +281,86 @@ def parse_snopud_file(input_file, rows, file_datetime, is_from_most_recent=True)
         est_restoration_time = find_element_in_kml_extended_data(pm.ExtendedData, "EstimatedRestorationUTC")
         polygon = pm.Polygon.outerBoundaryIs.LinearRing.coordinates
 
-        # snopud doesn't have a unique id for each outage, so we'll use the place + start datetime
-        outage_id = str(pm.name) + datetime.fromisoformat(start_time.text).replace(tzinfo=None).strftime("%Y%m%d%H%M%S")
-
         # snopud sometimes leaves entries with -1 for customers impacted and invalid dates and other fields
         # I assume this either means they're still investigating, or they're just using placeholder data for some 
         # other reason. We'll just skip them
         if customers_impacted == -1:
-            print(f"skipping outage {outage_id} because it has -1 for customers impacted")
+            print(f"skipping outage {pm.name} because it has -1 for customers impacted")
             continue
 
-        # then mold it into a row within the dataframe
-   
-        # snopud uses KML, in which a polygon is a single "island" which can have multiple cut-outs within it
-        # (https://developers.google.com/kml/documentation/kmlreference#outerboundaryis)
-        # but snopud doesn't seem to use cut-outs, so we can just use the outer boundary
-        # However, the KML points have an altitude, which we don't care about so we'll strip out
+        # Parse start time for grouping
+        start_time_parsed = datetime.fromisoformat(start_time.text).replace(tzinfo=None)
+        
+        # Parse polygon coordinates
         polygon_points = parse_kml_coordinate_string(polygon.text if hasattr(polygon, 'text') else str(polygon))
-        polygons = []
-        polygons.append(polygon_points)
-
-        # Compute smallest enclosing circle center as point of interest from JSON array
-        center_lon, center_lat, radius = smallest_enclosing_circle(polygons)
-   
-        pacific_timezone = pytz.timezone('US/Pacific')
-
-        # snopud sometimes puts placeholder text in the est restoration time field, in which case we convert to none
+        
+        placemark_data.append({
+            'placemark_name': pm.name,
+            'start_time_parsed': start_time_parsed,
+            'start_time_key': start_time_parsed.strftime("%Y%m%d%H%M%S"),
+            'customers_impacted': int(customers_impacted),
+            'status': status,
+            'cause': cause,
+            'est_restoration_time': est_restoration_time,
+            'polygon_points': polygon_points
+        })
+    
+    if not placemark_data:
+        return
+    
+    # Convert to DataFrame and group by start time
+    df = pd.DataFrame(placemark_data)
+    
+    # Group by start time and aggregate
+    grouped = df.groupby('start_time_key').agg({
+        'placemark_name': 'first',  # Use first name for outage ID
+        'start_time_parsed': 'first',  # All should be the same
+        'customers_impacted': 'sum',  # Sum customers across all placemarks
+        'status': 'first',  # Should be same for all
+        'cause': 'first',   # Should be same for all
+        'est_restoration_time': 'first',  # Should be same for all
+        'polygon_points': lambda x: list(x)  # Collect all polygons
+    }).reset_index()
+    
+    # Process each group to create combined outages
+    for _, row in grouped.iterrows():
+        # Create outage ID from first placemark name + start time
+        outage_id = str(row['placemark_name']) + row['start_time_parsed'].strftime("%Y%m%d%H%M%S")
+        
+        # Get all polygons for this group
+        all_polygons = row['polygon_points']
+        
+        # Compute smallest enclosing circle for all polygons combined
+        center_lon, center_lat, radius = smallest_enclosing_circle(all_polygons)
+        
+        # Handle restoration time
         try:
-            # otherwise, snopud times are TZ-aware UTC, and we want unaware UTC, so naivify!
-            est_restoration_time_string = datetime.fromisoformat(est_restoration_time.text).replace(tzinfo=None).strftime(OUTPUT_TIME_FORMAT)
+            est_restoration_time_string = datetime.fromisoformat(row['est_restoration_time'].text).replace(tzinfo=None).strftime(OUTPUT_TIME_FORMAT)
             logging.info(f"est restoration time: {est_restoration_time_string}")
         except Exception as e:    
-            print(f"error parsing est restoration time: {est_restoration_time.text}. Exception: {e}. \n Defaulting to None")
+            print(f"error parsing est restoration time: {row['est_restoration_time'].text}. Exception: {e}. \n Defaulting to None")
             est_restoration_time_string = "None"
-
-        row = {
+        
+        # Log combination info if multiple placemarks
+        if len(all_polygons) > 1:
+            print(f"Combining {len(all_polygons)} placemarks with start time {row['start_time_key']}")
+        
+        row_data = {
             "utility": "snopud",
             "outage_id": outage_id,
             "file_datetime": file_datetime.strftime(OUTPUT_TIME_FORMAT),
-            "start_time": datetime.fromisoformat(start_time.text).replace(tzinfo=None).strftime(OUTPUT_TIME_FORMAT),
-            "customers_impacted": customers_impacted,
-            "status": status,
-            "cause": cause,
+            "start_time": row['start_time_parsed'].strftime(OUTPUT_TIME_FORMAT),
+            "customers_impacted": row['customers_impacted'],
+            "status": row['status'],
+            "cause": row['cause'],
             "est_restoration_time": est_restoration_time_string,
-            "polygon_json": json.dumps(polygons),
+            "polygon_json": json.dumps(all_polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,
             "radius": radius,
             "isFromMostRecent": is_from_most_recent
         }
-        rows.append(row)
+        rows.append(row_data)
     
 def main():
     parser = argparse.ArgumentParser(description="Collect PSE outage updates from JSON files into a CSV. Can also be run on a single file. Assumes that input file names start with the date that the file was created, in %Y-%m-%dT%H%M%S%f form.")
