@@ -139,8 +139,8 @@ def smallest_enclosing_circle(array_of_arrays_of_points):
                                 c = c3
     return c
 
-def parse_pse_file(input_file, rows, file_datetime):
-    pse_local_timeformat = "%m/%d %I:%M %p" # e.g. "02/24 06:30 PM"
+def parse_pse_file(input_file, rows, file_datetime, is_from_most_recent=True):
+    pse_local_timeformat = "%Y/%m/%d %I:%M %p" # e.g. "2025/02/24 06:30 PM"
 
     try:
         data = json.load(input_file)
@@ -173,18 +173,22 @@ def parse_pse_file(input_file, rows, file_datetime):
         # check for both names for start time, est restoration time, and last updated
         if(not start_time_json):
             start_time_json = get_attr(attributes, "Start time")
+        # PSE omits the year from the start time, and strptime is threatening to not support that in future
+        # so we'll just use the file's year if the datetime string is short enough that it couldn't have the year
+        # (in case PSE adds the year later) 
+        if(len(start_time_json) <= 14):
+            start_time_json = str(file_datetime.year) + "/" + start_time_json # e.g. "01/15 08:00 AM" -> "2025/01/15 08:00 AM"
+
         start_time = datetime.strptime(start_time_json, pse_local_timeformat)
-        # PSE omits the year from the start time, so we have to pick one. Assume it's the same year as the file
-        start_time = start_time.replace(year=file_datetime.year)
 
         est_restoration_time_json = get_attr(attributes, "Est. Restoration time")
         if(not est_restoration_time_json):
             est_restoration_time_json = get_attr(attributes, "Est. restoration time")
 
         try:
+            if(len(est_restoration_time_json) <= 14):
+                est_restoration_time_json = str(file_datetime.year) + "/" + est_restoration_time_json # e.g. "01/15 08:00 AM" -> "2025/01/15 08:00 AM
             est_restoration_time = datetime.strptime(est_restoration_time_json, pse_local_timeformat)
-            # PSE omits the year from the restoration time, so we have to pick one. Assume it's the same year as the file
-            est_restoration_time = est_restoration_time.replace(year=file_datetime.year)
         except Exception as e:    
             print(f"error parsing est restoration time: {est_restoration_time_json}. Exception: {e}Defaulting to None")
             est_restoration_time = None
@@ -213,12 +217,13 @@ def parse_pse_file(input_file, rows, file_datetime):
             "polygon_json": json.dumps(polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,
-            "radius": radius
+            "radius": radius,
+            "isFromMostRecent": is_from_most_recent
         }
         rows.append(row)
 
 
-def parse_scl_file(input_file, rows, file_datetime):
+def parse_scl_file(input_file, rows, file_datetime, is_from_most_recent=True):
     data = json.load(input_file)
 
     for outage in data:
@@ -248,11 +253,12 @@ def parse_scl_file(input_file, rows, file_datetime):
             "polygon_json": json.dumps(polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,
-            "radius": radius
+            "radius": radius,
+            "isFromMostRecent": is_from_most_recent
         }
         rows.append(row)
 
-def parse_snopud_file(input_file, rows, file_datetime):
+def parse_snopud_file(input_file, rows, file_datetime, is_from_most_recent=True):
     try:
         root = parser.parse(input_file).getroot()
     except Exception as e:
@@ -318,7 +324,8 @@ def parse_snopud_file(input_file, rows, file_datetime):
             "polygon_json": json.dumps(polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,
-            "radius": radius
+            "radius": radius,
+            "isFromMostRecent": is_from_most_recent
         }
         rows.append(row)
     
@@ -373,7 +380,7 @@ def main():
             files = all_files
     rows = []
 
-    for file in files:
+    for file_index, file in enumerate(files):
         # Extract date and time from filename
         print(f"====== starting processing for file =======")
         print(f"file: {file}")
@@ -383,14 +390,16 @@ def main():
         # filenames are in GMT, stick with that throughout
         gmt_file_datetime = datetime.strptime(date_time_part, "%Y-%m-%dT%H%M%S%f")
 
+        # Determine if this is the most recent file (files are sorted in reverse order, so index 0 is most recent)
+        is_from_most_recent = (file_index == 0)
 
         with open(file, "r", encoding="utf-8") as f:
             if(args.utility == "pse"):
-                parse_pse_file(f, rows, gmt_file_datetime)
+                parse_pse_file(f, rows, gmt_file_datetime, is_from_most_recent)
             elif (args.utility == "scl"):
-                parse_scl_file(f, rows, gmt_file_datetime)
+                parse_scl_file(f, rows, gmt_file_datetime, is_from_most_recent)
             elif (args.utility == "snopud"):
-                parse_snopud_file(f, rows, gmt_file_datetime)
+                parse_snopud_file(f, rows, gmt_file_datetime, is_from_most_recent)
             else:
                 print("no utility specified, will not parse")
 

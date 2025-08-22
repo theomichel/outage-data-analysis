@@ -256,6 +256,18 @@ def main():
     # Create the repository object (real or mock)
     if args.mock:
         print("Using mock git repository for testing")
+        # Add tests directory to path for mock imports
+        # Check if we're running from tests directory or main directory
+        current_dir = os.getcwd()
+        if os.path.basename(current_dir) == 'tests':
+            # Running from tests directory, git_mock is in current directory
+            tests_dir = current_dir
+        else:
+            # Running from main directory, git_mock is in tests subdirectory
+            tests_dir = os.path.join(os.path.dirname(__file__), 'tests')
+        
+        if tests_dir not in sys.path:
+            sys.path.insert(0, tests_dir)
         from git_mock import MockRepo
         repo = MockRepo(repo_path)
         # Mock pull is handled by MockGit

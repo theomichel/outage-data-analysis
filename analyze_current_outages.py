@@ -25,7 +25,7 @@ def calculate_expected_length_minutes(start_time, est_restoration_time):
         time_diff = est_restoration_time - start_time
         return int(time_diff.total_seconds() / 60)
     except Exception as e:
-        print(f"Error calculating expected length: {e}")
+        print(f"Error calculating expected length: {e.message}")
         return None
 
 def calculate_active_duration_minutes(start_time, current_time):
@@ -34,8 +34,7 @@ def calculate_active_duration_minutes(start_time, current_time):
     Returns the difference between current time and start time.
     """
     try:        
-        print(f"start_time: {start_time}")
-        print(f"current_time: {current_time}")
+        print(f"Calculating active duration from start_time: {start_time} and current_time: {current_time}")
         # Convert to datetime if it's a string
         start_time = pd.to_datetime(start_time)
         current_time = pd.to_datetime(current_time)
@@ -47,17 +46,124 @@ def calculate_active_duration_minutes(start_time, current_time):
         print(f"Error calculating active duration: {e}")
         return None
 
+def reverse_geocode(lat, lon, api_key=None):
+    """Reverse geocode coordinates to get formatted location information."""
+
+    # State abbreviation lookup table (lowercase for case-insensitive comparison)
+    STATE_ABBREVIATIONS = {
+        "alabama": "AL",
+        "alaska": "AK",
+        "arizona": "AZ",
+        "arkansas": "AR",
+        "california": "CA",
+        "colorado": "CO",
+        "connecticut": "CT",
+        "delaware": "DE",
+        "florida": "FL",
+        "georgia": "GA",
+        "hawaii": "HI",
+        "idaho": "ID",
+        "illinois": "IL",
+        "indiana": "IN",
+        "iowa": "IA",
+        "kansas": "KS",
+        "kentucky": "KY",
+        "louisiana": "LA",
+        "maine": "ME",
+        "maryland": "MD",
+        "massachusetts": "MA",
+        "michigan": "MI",
+        "minnesota": "MN",
+        "mississippi": "MS",
+        "missouri": "MO",
+        "montana": "MT",
+        "nebraska": "NE",
+        "nevada": "NV",
+        "new hampshire": "NH",
+        "new jersey": "NJ",
+        "new mexico": "NM",
+        "new york": "NY",
+        "north carolina": "NC",
+        "north dakota": "ND",
+        "ohio": "OH",
+        "oklahoma": "OK",
+        "oregon": "OR",
+        "pennsylvania": "PA",
+        "rhode island": "RI",
+        "south carolina": "SC",
+        "south dakota": "SD",
+        "tennessee": "TN",
+        "texas": "TX",
+        "utah": "UT",
+        "vermont": "VT",
+        "virginia": "VA",
+        "washington": "WA",
+        "west virginia": "WV",
+        "wisconsin": "WI",
+        "wyoming": "WY",
+        "district of columbia": "DC",
+        "american samoa": "AS",
+        "guam": "GU",
+        "northern mariana islands": "MP",
+        "puerto rico": "PR",
+        "u.s. virgin islands": "VI"
+    }
+
+    # Create Google Maps URL
+    maps_url = f"https://maps.google.com/maps?q={lat:.6f},{lon:.6f}"
+
+    try:
+        if api_key:
+            url = f"https://geocode.maps.co/reverse?lat={lat}&lon={lon}&api_key={api_key}"
+        else:
+            # Fallback to google URL if no API key provided
+            return maps_url
+
+        response = requests.get(url)
+        response.raise_for_status()
+        
+        data = response.json()
+        address = data.get('address', {})
+        
+        suburb = address.get('suburb', '')
+        city = address.get('city', '') or address.get('town', '')
+        state = address.get('state', '')
+        
+        # Convert state to abbreviation if available (case-insensitive)
+        state_abbr = STATE_ABBREVIATIONS[state.lower()] if state else ''
+  
+        # Format location information
+        if suburb and city and state_abbr:
+            location_info = f"[{suburb}, {city}, {state_abbr}]({maps_url})"
+        elif city and state_abbr:
+            location_info = f"[{city}, {state_abbr}]({maps_url})"
+        elif state_abbr:
+            location_info = f"[{state_abbr}]({maps_url})"
+        else:
+            location_info = maps_url
+        
+        return location_info
+    except Exception as e:
+        print(f"Error reverse geocoding coordinates {lat}, {lon}: {e}")
+        # Fallback to just the Google Maps URL
+        return maps_url
+
 def send_telegram_message(token, chat_id, message, thread_id=None):
     """Sends a message to a specified Telegram chat."""
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    params = {
+    data = {
         "chat_id": chat_id,
-        "text": message
+        "text": message,
+        "link_preview_options": {
+            "is_disabled": True
+        },
+        "parse_mode": "Markdown"
     }
+
     if thread_id:
-        params["message_thread_id"] = thread_id
+        data["message_thread_id"] = thread_id
     try:
-        response = requests.post(url, params=params)
+        response = requests.post(url, json=data)
         response.raise_for_status()  # Raise an exception for HTTP errors
         print("Telegram message sent successfully!")
         return True
@@ -65,7 +171,7 @@ def send_telegram_message(token, chat_id, message, thread_id=None):
         print(f"Error sending Telegram message: {e}")
         return False
 
-def send_notification(notification_data, file_input, thresholds, bot_token=None, chat_id=None, thread_id=None):
+def send_notification(notification_data, file_input, thresholds, bot_token=None, chat_id=None, thread_id=None, geocode_api_key=None):
     """
     Send Telegram notification about outages that meet the threshold criteria.
     notification_data contains: new_outages, resolved_outages, new_customers, resolved_customers
@@ -73,87 +179,73 @@ def send_notification(notification_data, file_input, thresholds, bot_token=None,
     try:
         new_outages = notification_data['new_outages']
         resolved_outages = notification_data['resolved_outages']
-        new_customers = notification_data['new_customers']
-        resolved_customers = notification_data['resolved_customers']
-        
         messages_to_send = []
         
-        # Create separate notification for new outages
+        # Create individual notification for each new outage
         if not new_outages.empty:
-            new_message = f"🚨 **NEW OUTAGE ALERT**\n\n"
-            new_message += f"📈 **{len(new_outages)} new outage(s) detected**\n"
-            new_message += f"👥 **{new_customers:,.0f} customers affected**\n\n"
-            
-            # Add details for each new outage
-            for i, (_, outage) in enumerate(new_outages.iterrows()):
-                if i >= 10:  # Limit to first 10 outages to avoid message length issues
-                    new_message += f"... and {len(new_outages) - 10} more outages\n"
-                    break
+            for _, outage in new_outages.iterrows():
                 
-                print(f"outage: {outage}")
-
                 elapsed_hours = outage['elapsed_time_minutes'] / 60
                 
-                new_message += f"🔴 **{outage['outage_id']}**\n"
-                new_message += f"  👥 {outage['customers_impacted']:,.0f} customers\n"
-                new_message += f"  ⏱️ {elapsed_hours:.1f}h elapsed\n"
-                new_message += f"  📍 Status: {outage['status']}\n"
-                new_message += f"  ⚠️ Cause: {outage['cause']}\n"
+                new_message = f"🚨 NEW OUTAGE ALERT 🚨\n\n"
+                new_message += f"Utility: {outage['utility'].upper()}\n"
+                new_message += f"ID: {outage['outage_id']}\n"
+                new_message += f"Customers: {outage['customers_impacted']:,.0f} \n"
+                new_message += f"Current Duration: {elapsed_hours:.1f}h \n"
+                
+                # Add estimated duration if available
+                if pd.notna(outage['expected_length_minutes']) and outage['expected_length_minutes'] is not None:
+                    expected_hours = outage['expected_length_minutes'] / 60
+                    new_message += f"Expected Duration: {expected_hours:.1f}h \n"
+                
+                new_message += f"Status: {outage['status']}\n"
+                new_message += f"Cause: {outage['cause']}\n"
                 
                 # Add location if available
                 if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
-                    maps_url = f"https://maps.google.com/maps?q={outage['center_lat']:.6f},{outage['center_lon']:.6f}"
-                    new_message += f"  🗺️ Location: [{outage['center_lat']:.4f}, {outage['center_lon']:.4f}]({maps_url})\n"
+                    location_info = reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
+                    new_message += f"Location: {location_info}\n"
                 
-                new_message += "\n"
-            
-            new_message += f"🕐 Alert generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            messages_to_send.append(('new', new_message))
+                messages_to_send.append(('new', new_message, outage['outage_id']))
 
-        # Create separate notification for resolved outages  
+        # Create individual notification for each resolved outage  
         if not resolved_outages.empty:
-            resolved_message = f"✅ **OUTAGE RESOLVED ALERT**\n\n"
-            resolved_message += f"📉 **{len(resolved_outages)} outage(s) resolved**\n"
-            resolved_message += f"👥 **{resolved_customers:,.0f} customers restored**\n\n"
-            
-            # Add details for each resolved outage
-            for i, (_, outage) in enumerate(resolved_outages.iterrows()):
-                if i >= 10:  # Limit to first 10 outages
-                    resolved_message += f"... and {len(resolved_outages) - 10} more outages\n"
-                    break
-                    
-                resolved_message += f"✅ **{outage['outage_id']}**\n"
-                resolved_message += f"  👥 {outage['customers_impacted']:,.0f} customers restored\n"
-                resolved_message += f"  📍 Last status: {outage['status']}\n"
-                resolved_message += f"  ⚠️ Cause: {outage['cause']}\n"
+            for _, outage in resolved_outages.iterrows():
+                resolved_message = f"😌 RESOLVED OUTAGE ALERT 😌\n\n"
+                resolved_message += f"Utility: {outage['utility'].upper()}\n"
+                resolved_message += f"ID: {outage['outage_id']}\n"
+                resolved_message += f"Customers: {outage['customers_impacted']:,.0f}\n"
+                
+                # Add actual duration if available
+                if pd.notna(outage['elapsed_time_minutes']) and outage['elapsed_time_minutes'] is not None:
+                    actual_hours = outage['elapsed_time_minutes'] / 60
+                    resolved_message += f"Actual Duration: {actual_hours:.1f}h\n"
                 
                 # Add location if available
                 if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
-                    maps_url = f"https://maps.google.com/maps?q={outage['center_lat']:.6f},{outage['center_lon']:.6f}"
-                    resolved_message += f"  🗺️ Location: [{outage['center_lat']:.4f}, {outage['center_lon']:.4f}]({maps_url})\n"
+                    location_info = reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
+                    resolved_message += f"Location: {location_info}\n"
                 
-                resolved_message += "\n"
-            
-            resolved_message += f"🕐 Alert generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            messages_to_send.append(('resolved', resolved_message))
+                messages_to_send.append(('resolved', resolved_message, outage['outage_id']))
         
         # Send each message separately
-        for msg_type, message in messages_to_send:
+        for msg_type, message, outage_id in messages_to_send:
             # Send Telegram notification if credentials provided
             if bot_token and chat_id:
                 success = send_telegram_message(bot_token, chat_id, message, thread_id)
                 if success:
-                    print(f"Telegram {msg_type} outage notification sent to chat {chat_id}" + (f" (thread {thread_id})" if thread_id else ""))
+                    print(f"Telegram {msg_type} outage notification sent for {outage_id} to chat {chat_id}" + (f" (thread {thread_id})" if thread_id else ""))
                 else:
-                    print(f"Failed to send Telegram {msg_type} outage notification")
+                    print(f"Failed to send Telegram {msg_type} outage notification for {outage_id}")
             else:
-                print("Telegram credentials not provided, skipping notification")
+                print(f"Telegram credentials not provided, skipping {msg_type} notification for {outage_id}")
                 
-            # Save notification to timestamped file
-            notification_filename = f"notification_{msg_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            # Save notification to timestamped file with outage ID
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            notification_filename = f"notification_{msg_type}_{outage_id}_{timestamp}.txt"
             with open(notification_filename, 'w') as f:
                 f.write(message)
-            print(f"{msg_type.capitalize()} outage notification saved to: {notification_filename}")
+            print(f"{msg_type.capitalize()} outage notification for {outage_id} saved to: {notification_filename}")
         
         if not messages_to_send:
             print("No outages meeting criteria - no notification sent.")
@@ -179,14 +271,22 @@ def main():
                        help='Telegram chat ID for notifications')
     parser.add_argument('--telegram-thread-id', type=str,
                        help='Telegram thread ID for notifications (optional)')
+    parser.add_argument('--geocode-api-key', type=str,
+                       help='API key for geocoding service (optional)')
     args = parser.parse_args()
     
     print(f"====== analyze_current_outages.py starting for utility {args.utility} =======")
 
+
     # Convert thresholds from hours to minutes
-    threshold_minutes = args.length_threshold * 60
+    expected_length_threshold_minutes = args.length_threshold * 60
     elapsed_time_threshold_minutes = args.elapsed_time_threshold * 60
-    
+
+    print(f"Expected length threshold: {args.length_threshold} hours ({expected_length_threshold_minutes} minutes)")
+    print(f"Customer threshold: {args.customer_threshold}")
+    print(f"Elapsed time threshold: {args.elapsed_time_threshold} hours ({elapsed_time_threshold_minutes} minutes)")
+
+
     # Load the outage data
     df = pd.read_csv(args.file_input)
     
@@ -194,93 +294,117 @@ def main():
     unique_timestamps = sorted(df['file_datetime'].unique(), reverse=True)
     
     if len(unique_timestamps) >= 2:
-        latest_time = unique_timestamps[0]
-        previous_time = unique_timestamps[1]
-        print(f"Latest snapshot: {latest_time}")
-        print(f"Previous snapshot: {previous_time}")
+        latest_update_time = unique_timestamps[0]
+        previous_update_time = unique_timestamps[1]
+        print(f"Latest snapshot: {latest_update_time}")
+        print(f"Previous snapshot: {previous_update_time}")
         
         # Split data into latest and previous snapshots
-        latest_outages_df = df[df['file_datetime'] == latest_time].copy()
-        previous_outages_df = df[df['file_datetime'] == previous_time].copy()
+        latest_outages_df = df[df['file_datetime'] == latest_update_time].copy()
+        previous_outages_df = df[df['file_datetime'] == previous_update_time].copy()
         
     elif len(unique_timestamps) == 1:
-        latest_time = unique_timestamps[0]
-        previous_time = None
-        print(f"Only one snapshot available: {latest_time}")
+        latest_update_time = unique_timestamps[0]
+        print(f"Only one snapshot available: {latest_update_time}")
         
-        # Only latest data available
-        latest_outages_df = df[df['file_datetime'] == latest_time].copy()
-        previous_outages_df = pd.DataFrame()  # Empty dataframe
+        # Check if isFromMostRecent column exists and all rows have the same value for that column
+        if 'isFromMostRecent' in df.columns:
+            is_from_most_recent_values = df['isFromMostRecent'].unique()
+            print(f"isFromMostRecent values found: {is_from_most_recent_values}")
+            
+            if len(is_from_most_recent_values) == 1:
+                is_from_most_recent = is_from_most_recent_values[0]
+                print(f"All rows have isFromMostRecent = {is_from_most_recent}")
+                
+                if is_from_most_recent:
+                    # All rows are from the most recent file
+                    previous_update_time = None
+                    latest_update_time = unique_timestamps[0]
+                    latest_outages_df = df[df['file_datetime'] == latest_update_time].copy()
+                    previous_outages_df = pd.DataFrame()  # Empty dataframe
+                else:
+                    # All rows are from the previous file
+                    previous_update_time = unique_timestamps[0]
+                    latest_update_time = None
+                    latest_outages_df = pd.DataFrame()  # Empty dataframe
+                    previous_outages_df = df[df['file_datetime'] == previous_update_time].copy()
+            else:
+                # Mixed values - this shouldn't happen with single timestamp
+                assert False, f"Mixed isFromMostRecent values ({is_from_most_recent_values}) found with single timestamp"
+        else:
+            # No isFromMostRecent column - fall back to original behavior
+            print("No isFromMostRecent column found, treating as latest data")
+            latest_outages_df = df[df['file_datetime'] == latest_update_time].copy()
+            previous_outages_df = pd.DataFrame()  # Empty dataframe
         
     else:
         print("No snapshot data found")
         return
     
-    # Process latest outages (new outages logic)
+    # do some length calculations on our dataframes of new and previous outages
     if not latest_outages_df.empty:
         # Calculate expected length in minutes for latest outages
-        latest_outages_df['expected_length_minutes'] = latest_outages_df.apply(
-            lambda row: calculate_expected_length_minutes(row['start_time'], row['est_restoration_time']), 
+        latest_outages_df['expected_length_minutes_latest'] = latest_outages_df.apply(
+            lambda row: calculate_expected_length_minutes(latest_update_time, row['est_restoration_time']), 
             axis=1
         )
         
         # Calculate active duration in minutes for latest outages
-        latest_outages_df['elapsed_time_minutes'] = latest_outages_df.apply(
-            lambda row: calculate_active_duration_minutes(row['start_time'], latest_time), 
+        latest_outages_df['elapsed_time_minutes_latest'] = latest_outages_df.apply(
+            lambda row: calculate_active_duration_minutes(row['start_time'], latest_update_time), 
+            axis=1
+        )
+
+    if not previous_outages_df.empty:
+        # Calculate expected length in minutes for previous outages
+        previous_outages_df['expected_length_minutes_previous'] = previous_outages_df.apply(
+            lambda row: calculate_expected_length_minutes(previous_update_time, row['est_restoration_time']), 
             axis=1
         )
         
-        print(f"latest_outages_df: {latest_outages_df}")
+        # Calculate active duration in minutes for previous outages
+        previous_outages_df['elapsed_time_minutes_previous'] = previous_outages_df.apply(
+            lambda row: calculate_active_duration_minutes(row['start_time'], previous_update_time), 
+            axis=1
+        )
 
-        # Filter latest outages that exceed the thresholds
-        significant_latest = latest_outages_df[latest_outages_df['expected_length_minutes'] > threshold_minutes]
-        significant_latest = significant_latest[significant_latest['customers_impacted'] > args.customer_threshold]
-        significant_latest = significant_latest[significant_latest['elapsed_time_minutes'] > elapsed_time_threshold_minutes]
+    new_outages = pd.DataFrame()
+    if not latest_outages_df.empty:
+
+        # join the latest_outages_df with the previous_outages_df on outage_id,
+        # bringing in the est_restoration_time and duration_minutes from the previous_outages_df
+        latest_outages_df = latest_outages_df.merge(previous_outages_df[['outage_id', 'expected_length_minutes_previous', 'elapsed_time_minutes_previous', "customers_impacted"]], on='outage_id', how='left', suffixes=('_latest', '_previous'))
+
+        # a "new" outage is one that has elapsed time > threshold and expected length > threshold, 
+        # and either is not in the previous, or didn't meet one of those conditions in the previous
+        new_outages = latest_outages_df[
+            # the latest snapshot meets all the thresholds
+            (latest_outages_df['expected_length_minutes_latest'] > expected_length_threshold_minutes) &
+            (latest_outages_df['customers_impacted_latest'] > args.customer_threshold) &
+            (latest_outages_df['elapsed_time_minutes_latest'] > elapsed_time_threshold_minutes) &
+            # the previous snapshot missed on at least one threshold
+            ((pd.isna(latest_outages_df['expected_length_minutes_previous']) | (latest_outages_df['expected_length_minutes_previous'] <= expected_length_threshold_minutes)) |
+            (pd.isna(latest_outages_df['customers_impacted_previous']) | (latest_outages_df['customers_impacted_previous'] <= args.customer_threshold)) |
+            (pd.isna(latest_outages_df['elapsed_time_minutes_previous']) | (latest_outages_df['elapsed_time_minutes_previous'] <= elapsed_time_threshold_minutes)))
+        ]
         
-        print(f"significant_latest: {significant_latest}")
-
-        # Only alert on truly NEW outages (not present in previous snapshot)
-        if not previous_outages_df.empty:
-            previous_outage_ids = set(previous_outages_df['outage_id'].unique())
-            latest_outage_ids = set(significant_latest['outage_id'].unique())
-            truly_new_outage_ids = latest_outage_ids - previous_outage_ids
-            
-            if truly_new_outage_ids:
-                new_outages = significant_latest[significant_latest['outage_id'].isin(truly_new_outage_ids)].copy()
-                print(f"Found {len(new_outages)} truly new outages (not in previous snapshot)")
-            else:
-                new_outages = pd.DataFrame()
-                print("No truly new outages found")
-        else:
-            # No previous snapshot, so all significant outages are "new"
-            new_outages = significant_latest
-            print(f"Found {len(new_outages)} outages (no previous snapshot for comparison)")
-    else:
-        new_outages = pd.DataFrame()
-    
     # Process resolved outages (in previous but not in latest)
     resolved_outages = pd.DataFrame()
-    if not previous_outages_df.empty and not latest_outages_df.empty:
-        # First, filter previous outages using the same thresholds
-        # Calculate expected length and elapsed time for previous outages
-        previous_outages_df['expected_length_minutes'] = previous_outages_df.apply(
-            lambda row: calculate_expected_length_minutes(row['start_time'], row['est_restoration_time']), 
-            axis=1
-        )
-        previous_outages_df['elapsed_time_minutes'] = previous_outages_df.apply(
-            lambda row: calculate_active_duration_minutes(row['start_time'], previous_time), 
-            axis=1
-        )
-        
+    if not previous_outages_df.empty:
         # Filter previous outages that would have met our alert thresholds
-        significant_previous = previous_outages_df[previous_outages_df['expected_length_minutes'] > threshold_minutes]
-        significant_previous = significant_previous[significant_previous['customers_impacted'] > args.customer_threshold]
-        significant_previous = significant_previous[significant_previous['elapsed_time_minutes'] > elapsed_time_threshold_minutes]
+        significant_previous = previous_outages_df[
+            (previous_outages_df['expected_length_minutes_previous'] > expected_length_threshold_minutes) &
+            (previous_outages_df['customers_impacted'] > args.customer_threshold) &
+            (previous_outages_df['elapsed_time_minutes_previous'] > elapsed_time_threshold_minutes)
+        ]
         
         # Find significant outages that were in previous snapshot but not in latest
         previous_outage_ids = set(significant_previous['outage_id'].unique())
-        latest_outage_ids = set(latest_outages_df['outage_id'].unique())
-        resolved_outage_ids = previous_outage_ids - latest_outage_ids
+        if(not latest_outages_df.empty):
+            latest_outage_ids = set(latest_outages_df['outage_id'].unique())
+            resolved_outage_ids = previous_outage_ids - latest_outage_ids
+        else:
+            resolved_outage_ids = previous_outage_ids
         
         if resolved_outage_ids:
             resolved_outages = significant_previous[significant_previous['outage_id'].isin(resolved_outage_ids)].copy()
@@ -288,80 +412,45 @@ def main():
         else:
             print("No significant resolved outages found")
     
-    # Combine results for reporting (use new_outages for backward compatibility)
-    filtered_outages = new_outages
+  
+    # Select and rename columns in new_outages dataframe
+    if not new_outages.empty:
+        # Rename columns to remove _latest suffix
+        new_outages = new_outages.rename(columns={
+            'customers_impacted_latest': 'customers_impacted',
+            'expected_length_minutes_latest': 'expected_length_minutes',
+            'elapsed_time_minutes_latest': 'elapsed_time_minutes'
+        })
 
-    # Calculate total customers affected
-    if not filtered_outages.empty:
-        total_customers = filtered_outages['customers_impacted'].sum()
-    else:
-        total_customers = 0
-    
-    # Create new dataframe with only the specified columns
-    if not filtered_outages.empty:
-        current_outages = filtered_outages[[
-            'outage_id',
-            'customers_impacted', 
-            'start_time',
-            'expected_length_minutes',
-            'elapsed_time_minutes',
-            'status',
-            'cause',
-            'center_lon',
-            'center_lat',
-            'radius',
-            'polygon_json',
-        ]].copy()
-    else:
-        # Create empty dataframe with correct columns
-        current_outages = pd.DataFrame(columns=[
-            'outage_id',
-            'customers_impacted', 
-            'start_time',
-            'expected_length_minutes',
-            'elapsed_time_minutes',
-            'status',
-            'cause',
-            'center_lon',
-            'center_lat',
-            'radius',
-            'polygon_json',
-        ])
-    
-    # Save to new CSV file
-    current_outages.to_csv(f"{args.utility}_current_outages_analysis.csv", index=False)
-    print(f"Current outages analysis saved to {args.utility}_current_outages.csv")
-    print(f"New outages meeting criteria: {len(current_outages)}")
-    print(f"Total customers affected by new outages: {total_customers:.0f}")
     if not resolved_outages.empty:
-        resolved_customers = resolved_outages['customers_impacted'].sum()
-        print(f"Resolved outages: {len(resolved_outages)}")
-        print(f"Total customers restored: {resolved_customers:.0f}")
-    print(f"Expected length threshold: {args.length_threshold} hours ({threshold_minutes} minutes)")
-    print(f"Customer threshold: {args.customer_threshold}")
-    print(f"Elapsed time threshold: {args.elapsed_time_threshold} hours ({elapsed_time_threshold_minutes} minutes)")
-    print(f"Latest update time: {latest_time}")
-    if previous_time:
-        print(f"Previous update time: {previous_time}")
-    
-    if(len(current_outages) > 0):
-        print("WE HAVE OUTAGES!!!")
+        resolved_outages = resolved_outages.rename(columns={
+            'customers_impacted_previous': 'customers_impacted',
+            'expected_length_minutes_previous': 'expected_length_minutes',
+            'elapsed_time_minutes_previous': 'elapsed_time_minutes'
+        })
 
+
+
+    # Save to new CSV file
+    new_outages.to_csv(f"{args.utility}_current_outages_analysis.csv", index=False)
+    print(f"Current outages analysis saved to {args.utility}_current_outages.csv")
+    print(f"New outages meeting criteria: {len(new_outages)}")
+    if not resolved_outages.empty:
+        print(f"Resolved outages: {len(resolved_outages)}")
+    
     # Send notification if there are new outages or resolved outages
-    if len(current_outages) > 0 or len(resolved_outages) > 0:
+    if len(new_outages) > 0 or len(resolved_outages) > 0:
         thresholds = {
             'length': args.length_threshold,
             'customers': args.customer_threshold,
             'elapsed': args.elapsed_time_threshold
         }
-        # Pass both new and resolved outages to notification
+        # Pass both new and resolved outages to notification logic
         notification_data = {
-            'new_outages': current_outages,
-            'resolved_outages': resolved_outages,
-            'new_customers': total_customers,
-            'resolved_customers': resolved_outages['customers_impacted'].sum() if not resolved_outages.empty else 0
+            'new_outages': new_outages,
+            'resolved_outages': resolved_outages
         }
-        send_notification(notification_data, args.file_input, thresholds, args.telegram_token, args.telegram_chat_id, args.telegram_thread_id)
+        send_notification(notification_data, args.file_input, thresholds, args.telegram_token, args.telegram_chat_id, args.telegram_thread_id, args.geocode_api_key)
 
     print(f"====== analyze_current_outages.py completed =======")
 
