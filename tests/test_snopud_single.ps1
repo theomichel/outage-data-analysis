@@ -108,13 +108,13 @@ try {
                     $startTime = $outage.start_time
                     Write-Host "+ Start time: $startTime" -ForegroundColor Green
                     
-                    # Check outage ID (should use placemark name 6207)
-                    $outageId = $outage.outage_id
-                    if ($outageId -like "*6207*") {
-                        Write-Host "+ Test PASSED: Outage ID uses placemark name (6207)" -ForegroundColor Green
-                    } else {
-                        Write-Host "- Test FAILED: Outage ID should use placemark name" -ForegroundColor Red
-                    }
+                                         # Check outage ID (should be timestamp-based from start time)
+                     $outageId = $outage.outage_id
+                     if ($outageId -eq "20250115132642") {
+                         Write-Host "+ Test PASSED: Outage ID uses timestamp format (20250115132642)" -ForegroundColor Green
+                     } else {
+                         Write-Host "- Test FAILED: Expected outage ID 20250115132642, got $outageId" -ForegroundColor Red
+                     }
                     
                     # Check cause
                     $cause = $outage.cause

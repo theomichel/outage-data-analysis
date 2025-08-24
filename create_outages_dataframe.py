@@ -324,8 +324,8 @@ def parse_snopud_file(input_file, rows, file_datetime, is_from_most_recent=True)
     
     # Process each group to create combined outages
     for _, row in grouped.iterrows():
-        # Create outage ID from first placemark name + start time
-        outage_id = str(row['placemark_name']) + row['start_time_parsed'].strftime("%Y%m%d%H%M%S")
+        # Create outage ID from the start time
+        outage_id = row['start_time_parsed'].strftime("%Y%m%d%H%M%S")
         
         # Get all polygons for this group
         all_polygons = row['polygon_points']

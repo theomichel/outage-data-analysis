@@ -1,6 +1,6 @@
 # SNOPUD Separate Outages Test
 # Tests the scenario where two SNOPUD placemarks have different start times
-# and should remain as separate outages in the output.
+# and should remain as separate outages.
 #
 # Parameters:
 #   -Verbose: Show detailed output from each step
@@ -94,27 +94,38 @@ try {
                 if ($csvContent.Count -eq 2) {
                     Write-Host "+ Test PASSED: Found exactly 2 separate outages as expected" -ForegroundColor Green
                     
-                    # Check that the outages have different start times
-                    $startTimes = $csvContent | ForEach-Object { $_.start_time }
-                    $uniqueStartTimes = $startTimes | Sort-Object -Unique
-                    
-                    if ($uniqueStartTimes.Count -eq 2) {
-                        Write-Host "+ Test PASSED: Outages have different start times as expected" -ForegroundColor Green
-                        Write-Host "  Start times: $($startTimes -join ', ')" -ForegroundColor Gray
+                    # Check first outage (6207)
+                    $outage1 = $csvContent[0]
+                    $customerCount1 = [int]$outage1.customers_impacted
+                    if ($customerCount1 -eq 5) {
+                        Write-Host "+ Test PASSED: First outage customer count correct (5)" -ForegroundColor Green
                     } else {
-                        Write-Host "- Test FAILED: Outages should have different start times" -ForegroundColor Red
+                        Write-Host "- Test FAILED: Expected customer count 5 for first outage, got $customerCount1" -ForegroundColor Red
                     }
                     
-                    # Check customer counts
-                    $customerCounts = $csvContent | ForEach-Object { [int]$_.customers_impacted }
-                    Write-Host "+ Customer counts: $($customerCounts -join ', ')" -ForegroundColor Green
+                    # Check second outage (8431)
+                    $outage2 = $csvContent[1]
+                    $customerCount2 = [int]$outage2.customers_impacted
+                    if ($customerCount2 -eq 3) {
+                        Write-Host "+ Test PASSED: Second outage customer count correct (3)" -ForegroundColor Green
+                    } else {
+                        Write-Host "- Test FAILED: Expected customer count 3 for second outage, got $customerCount2" -ForegroundColor Red
+                    }
                     
-                    # Check outage IDs
-                    $outageIds = $csvContent | ForEach-Object { $_.outage_id }
-                    Write-Host "+ Outage IDs: $($outageIds -join ', ')" -ForegroundColor Green
+                    # Check that start times are different
+                    $startTime1 = $outage1.start_time
+                    $startTime2 = $outage2.start_time
+                    Write-Host "+ First outage start time: $startTime1" -ForegroundColor Green
+                    Write-Host "+ Second outage start time: $startTime2" -ForegroundColor Green
+                    
+                    if ($startTime1 -ne $startTime2) {
+                        Write-Host "+ Test PASSED: Start times are different as expected" -ForegroundColor Green
+                    } else {
+                        Write-Host "- Test FAILED: Start times should be different" -ForegroundColor Red
+                    }
                     
                 } else {
-                    Write-Host "- Test FAILED: Expected 2 outages, found $($csvContent.Count)" -ForegroundColor Red
+                    Write-Host "- Test FAILED: Expected 2 separate outages, found $($csvContent.Count)" -ForegroundColor Red
                 }
             } else {
                 Write-Host "- Test FAILED: CSV output file not created" -ForegroundColor Red

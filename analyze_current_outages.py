@@ -243,7 +243,7 @@ def send_notification(notification_data, file_input, thresholds, bot_token=None,
             # Save notification to timestamped file with outage ID
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             notification_filename = f"notification_{msg_type}_{outage_id}_{timestamp}.txt"
-            with open(notification_filename, 'w') as f:
+            with open(notification_filename, 'w', encoding="utf-8") as f:
                 f.write(message)
             print(f"{msg_type.capitalize()} outage notification for {outage_id} saved to: {notification_filename}")
         
@@ -370,6 +370,10 @@ def main():
 
     new_outages = pd.DataFrame()
     if not latest_outages_df.empty:
+        # If previous_outages_df is empty, create a placeholder DataFrame with the required columns
+        # so that the join (merge) doesn't fail
+        if previous_outages_df.empty:
+            previous_outages_df = pd.DataFrame(columns=['outage_id', 'expected_length_minutes_previous', 'elapsed_time_minutes_previous', 'customers_impacted'])
 
         # join the latest_outages_df with the previous_outages_df on outage_id,
         # bringing in the est_restoration_time and duration_minutes from the previous_outages_df
@@ -432,8 +436,9 @@ def main():
 
 
     # Save to new CSV file
-    new_outages.to_csv(f"{args.utility}_current_outages_analysis.csv", index=False)
-    print(f"Current outages analysis saved to {args.utility}_current_outages.csv")
+    output_file = f"{args.utility}_current_outages_analysis.csv"
+    new_outages.to_csv(output_file, index=False)
+    print(f"Current outages analysis saved to {output_file}")
     print(f"New outages meeting criteria: {len(new_outages)}")
     if not resolved_outages.empty:
         print(f"Resolved outages: {len(resolved_outages)}")
