@@ -114,12 +114,12 @@ def load_wa_population_data():
     _wa_population_df = pd.read_csv(pop_file_path)
     
     # Clean household count data - convert to numeric, handling both string and numeric inputs
-    if _wa_population_df['household_count'].dtype == 'object':
+    if _wa_population_df['Household Count'].dtype == 'object':
         # If it's a string/object type, clean it first
-        _wa_population_df['household_count'] = _wa_population_df['household_count'].str.replace('"', '').str.replace(',', '').astype(int)
+        _wa_population_df['Household Count'] = _wa_population_df['Household Count'].str.replace('"', '').str.replace(',', '').astype(int)
     else:
         # If it's already numeric, just ensure it's int
-        _wa_population_df['household_count'] = _wa_population_df['household_count'].astype(int)
+        _wa_population_df['Household Count'] = _wa_population_df['Household Count'].astype(int)
     
     # Create a mapping from ZIP to household count
     _wa_population_df['ZIP'] = _wa_population_df['ZIP'].astype(str)
@@ -814,7 +814,7 @@ def create_interactive_html_map(impacted_zips, impact_df, population_data, filen
                 'total_customers': row['total_customers'],
                 'num_outages': row['num_outages'],
                 'impact_rate': row.get('impact_rate', 'N/A'),
-                'households': row.get('household_count', 'N/A'),
+                'households': row.get('Household Count', 'N/A'),
                 'city_town': row.get('City/Town', 'Unknown'),
                 'county': row.get('County', 'Unknown')
             }
@@ -957,12 +957,11 @@ def create_zip_code_impact_analysis(outages_df, population_data=None, png_filena
     if population_data is not None:
         impact_df['zip_str'] = impact_df['zip_code'].astype(str)
         impact_df = impact_df.merge(population_data, left_on='zip_str', right_on='ZIP', how='left')
-        impact_df['impact_rate'] = (impact_df['total_customers'] / impact_df['household_count']) * 100
+        impact_df['impact_rate'] = (impact_df['total_customers'] / impact_df['Household Count']) * 100
         # Sort by impact rate (highest first), then by total customers for ties
         impact_df = impact_df.sort_values(['impact_rate', 'total_customers'], ascending=[False, False])
     else:
         # If no population data, sort by total customers
-        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH")
         impact_df = impact_df.sort_values('total_customers', ascending=False)
     
     # Print the analysis results
@@ -977,8 +976,8 @@ def create_zip_code_impact_analysis(outages_df, population_data=None, png_filena
         num_outages = row['num_outages']
         
         if pd.notna(zip_code):  # Skip None/NaN zip codes
-            if population_data is not None and 'household_count' in row and 'City/Town' in row:
-                households = row['household_count']
+            if population_data is not None and 'Household Count' in row and 'City/Town' in row:
+                households = row['Household Count']
                 city_town = row['City/Town']
                 impact_rate = row['impact_rate']
                 if pd.notna(households) and pd.notna(impact_rate):
@@ -1011,7 +1010,7 @@ def create_zip_code_impact_analysis(outages_df, population_data=None, png_filena
             affected_zips = [str(zip_code) for zip_code in zip_code_impacts.index if pd.notna(zip_code)]
             affected_pop_data = population_data[population_data['ZIP'].isin(affected_zips)]
             if len(affected_pop_data) > 0:
-                total_households = affected_pop_data['household_count'].sum()
+                total_households = affected_pop_data['Household Count'].sum()
                 overall_impact_rate = (total_impacted / total_households) * 100
                 print(f"  Total households in affected zip codes: {total_households:,.0f}")
                 print(f"  Overall impact rate: {overall_impact_rate:.2f}% of households")
