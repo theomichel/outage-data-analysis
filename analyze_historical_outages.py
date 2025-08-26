@@ -23,7 +23,7 @@ from branca.colormap import LinearColormap
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Configuration for impact rate visualization
-IMPACT_RATE_CAP = 50.0  # Cap impact rates at this percentage for visualization
+IMPACT_RATE_CAP = 100.0  # Cap impact rates at this percentage for visualization
 
 def has_changes(series):
     return series.nunique() > 1
@@ -98,34 +98,33 @@ def load_wa_zip_codes():
 
 def load_wa_population_data():
     """
-    Load Washington zip code population data from CSV file.
-    Returns a DataFrame with zip code and population information.
+    Load Washington zip code household count data from CSV file.
+    Returns a DataFrame with zip code and household count information.
     """
     global _wa_population_df
     
     if _wa_population_df is None:
         pop_file_path = os.path.join(os.path.dirname(__file__), 'constant_data', 'washington_zip_populations.csv')
         
-        if not os.path.exists(pop_file_path):
-            print(f"Warning: Population file not found at {pop_file_path}")
-            return None
-            
-        try:
-            print("Loading Washington zip code population data...")
-            _wa_population_df = pd.read_csv(pop_file_path)
-            
-            # Clean population data - remove quotes and convert to numeric
-            _wa_population_df['Population'] = _wa_population_df['Population'].str.replace('"', '').str.replace(',', '').astype(int)
-            
-            # Create a mapping from ZIP to population
-            _wa_population_df['ZIP'] = _wa_population_df['ZIP'].astype(str)
-            
-            print(f"Loaded population data for {len(_wa_population_df)} zip codes")
-            return _wa_population_df
-        except Exception as e:
-            print(f"Error loading population file: {e}")
-            return None
+    if not os.path.exists(pop_file_path):
+        print(f"Warning: Population file not found at {pop_file_path}")
+        return None
+
+    print("Loading Washington zip code household count data...")
+    _wa_population_df = pd.read_csv(pop_file_path)
     
+    # Clean household count data - convert to numeric, handling both string and numeric inputs
+    if _wa_population_df['household_count'].dtype == 'object':
+        # If it's a string/object type, clean it first
+        _wa_population_df['household_count'] = _wa_population_df['household_count'].str.replace('"', '').str.replace(',', '').astype(int)
+    else:
+        # If it's already numeric, just ensure it's int
+        _wa_population_df['household_count'] = _wa_population_df['household_count'].astype(int)
+    
+    # Create a mapping from ZIP to household count
+    _wa_population_df['ZIP'] = _wa_population_df['ZIP'].astype(str)
+    
+    print(f"Loaded household count data for {len(_wa_population_df)} zip codes")
     return _wa_population_df
 
 def get_zip_code(lon, lat):
@@ -766,7 +765,7 @@ def create_interactive_html_map(impacted_zips, impact_df, population_data, filen
            colors=['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'],
            vmin=min_rate,
            vmax=max_rate,
-                       caption='Impact Rate (sum of impacted customers across all outages / total customers in the zip, as a %, capped at 50%)'
+                       caption='Impact Rate (sum of impacted customers across all outages / total customers in the zip, as a %, capped at ' + str(int(IMPACT_RATE_CAP)) + '%)'
        )
     
                    # Add the color map to the map
@@ -815,7 +814,7 @@ def create_interactive_html_map(impacted_zips, impact_df, population_data, filen
                 'total_customers': row['total_customers'],
                 'num_outages': row['num_outages'],
                 'impact_rate': row.get('impact_rate', 'N/A'),
-                'population': row.get('Population', 'N/A'),
+                'households': row.get('household_count', 'N/A'),
                 'city_town': row.get('City/Town', 'Unknown'),
                 'county': row.get('County', 'Unknown')
             }
@@ -834,11 +833,11 @@ def create_interactive_html_map(impacted_zips, impact_df, population_data, filen
             zip_data = zip_data_map.get(zip_code, {})
             
                          # Create popup content with safe formatting
-            population = zip_data.get('population', 'N/A')
-            if isinstance(population, (int, float)):
-                 population_str = f"{int(population):,}"  # Convert to int and format with commas
+            households = zip_data.get('households', 'N/A')
+            if isinstance(households, (int, float)):
+                 households_str = f"{int(households):,}"  # Convert to int and format with commas
             else:
-                 population_str = str(population)
+                 households_str = str(households)
             
             total_customers = zip_data.get('total_customers', 'N/A')
             customers_str = f"{total_customers:,}" if isinstance(total_customers, (int, float)) else str(total_customers)
@@ -850,7 +849,7 @@ def create_interactive_html_map(impacted_zips, impact_df, population_data, filen
             <div style="font-family: Arial, sans-serif; min-width: 200px;">
                 <h4 style="margin: 0 0 10px 0; color: #333;">ZIP Code: {zip_code}</h4>
                 <table style="width: 100%; border-collapse: collapse;">
-                    <tr><td style="padding: 2px 0;"><strong>Population:</strong></td><td style="padding: 2px 0;">{population_str}</td></tr>
+                                         <tr><td style="padding: 2px 0;"><strong>Households:</strong></td><td style="padding: 2px 0;">{households_str}</td></tr>
                     <tr><td style="padding: 2px 0;"><strong># Outages:</strong></td><td style="padding: 2px 0;">{zip_data.get('num_outages', 'N/A')}</td></tr>
                     <tr><td style="padding: 2px 0;"><strong>Total Customers Impacted:</strong></td><td style="padding: 2px 0;">{customers_str}</td></tr>
                     <tr><td style="padding: 2px 0;"><strong>Impact Rate:</strong></td><td style="padding: 2px 0;">{impact_str}</td></tr>
@@ -958,17 +957,18 @@ def create_zip_code_impact_analysis(outages_df, population_data=None, png_filena
     if population_data is not None:
         impact_df['zip_str'] = impact_df['zip_code'].astype(str)
         impact_df = impact_df.merge(population_data, left_on='zip_str', right_on='ZIP', how='left')
-        impact_df['impact_rate'] = (impact_df['total_customers'] / impact_df['Population']) * 100
+        impact_df['impact_rate'] = (impact_df['total_customers'] / impact_df['household_count']) * 100
         # Sort by impact rate (highest first), then by total customers for ties
         impact_df = impact_df.sort_values(['impact_rate', 'total_customers'], ascending=[False, False])
     else:
         # If no population data, sort by total customers
+        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH")
         impact_df = impact_df.sort_values('total_customers', ascending=False)
     
     # Print the analysis results
     print(f"\nTotal impacted customers by zip code:")
     print("=" * 100)
-    print(f"{'ZIP Code':<10} {'Total Customers':<15} {'# Outages':<10} {'Population':<12} {'Impact Rate':<12} {'City/Town':<20}")
+    print(f"{'ZIP Code':<10} {'Total Customers':<15} {'# Outages':<10} {'Households':<12} {'Impact Rate':<12} {'City/Town':<20}")
     print("-" * 100)
     
     for _, row in impact_df.iterrows():
@@ -977,12 +977,12 @@ def create_zip_code_impact_analysis(outages_df, population_data=None, png_filena
         num_outages = row['num_outages']
         
         if pd.notna(zip_code):  # Skip None/NaN zip codes
-            if population_data is not None and 'Population' in row and 'City/Town' in row:
-                population = row['Population']
+            if population_data is not None and 'household_count' in row and 'City/Town' in row:
+                households = row['household_count']
                 city_town = row['City/Town']
                 impact_rate = row['impact_rate']
-                if pd.notna(population) and pd.notna(impact_rate):
-                    print(f"{zip_code:<10} {total_customers:>14,.0f} {num_outages:>9} {population:>11,.0f} {impact_rate:>11.2f}% {city_town:<20}")
+                if pd.notna(households) and pd.notna(impact_rate):
+                    print(f"{zip_code:<10} {total_customers:>14,.0f} {num_outages:>9} {households:>11,.0f} {impact_rate:>11.2f}% {city_town:<20}")
                 else:
                     print(f"{zip_code:<10} {total_customers:>14,.0f} {num_outages:>9} {'N/A':>11} {'N/A':>11} {'Unknown':<20}")
             else:
@@ -1011,10 +1011,10 @@ def create_zip_code_impact_analysis(outages_df, population_data=None, png_filena
             affected_zips = [str(zip_code) for zip_code in zip_code_impacts.index if pd.notna(zip_code)]
             affected_pop_data = population_data[population_data['ZIP'].isin(affected_zips)]
             if len(affected_pop_data) > 0:
-                total_population = affected_pop_data['Population'].sum()
-                overall_impact_rate = (total_impacted / total_population) * 100
-                print(f"  Total population in affected zip codes: {total_population:,.0f}")
-                print(f"  Overall impact rate: {overall_impact_rate:.2f}% of population")
+                total_households = affected_pop_data['household_count'].sum()
+                overall_impact_rate = (total_impacted / total_households) * 100
+                print(f"  Total households in affected zip codes: {total_households:,.0f}")
+                print(f"  Overall impact rate: {overall_impact_rate:.2f}% of households")
     
     # Create heatmaps showing impact rates by zip code
     if len(impact_df) > 0:
@@ -1170,6 +1170,7 @@ def main():
 
     # Load population data for normalization
     population_data = load_wa_population_data()
+    print(f"population_data: {population_data}")
     
     # Create zip code impact analysis and visualizations for the filtered outages
     if len(both_thresholds) > 0:

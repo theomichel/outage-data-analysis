@@ -1,606 +1,607 @@
-﻿ZIP,City/Town,County,Population
-99301,Pasco,Franklin County,"85,210"
-98052,Redmond,King County,"77,324"
-98012,Bothell,Snohomish County,"75,555"
-98682,Vancouver,Clark County,"66,821"
-98208,Everett,Snohomish County,"60,723"
-99208,Spokane,Spokane County,"58,172"
-98391,Bonney Lake,Pierce County,"56,646"
-98115,Seattle,King County,"54,457"
-98270,Marysville,Snohomish County,"52,794"
-98034,Kirkland,King County,"52,636"
-98103,Seattle,King County,"51,878"
-98387,Spanaway,Pierce County,"51,384"
-98003,Federal Way,King County,"51,329"
-99336,Kennewick,Benton County,"51,329"
-98133,Seattle,King County,"50,921"
-98632,Longview,Cowlitz County,"50,837"
-98023,Federal Way,King County,"50,778"
-98092,Auburn,King County,"50,679"
-98258,Lake Stevens,Snohomish County,"50,582"
-98105,Seattle,King County,"50,302"
-98661,Vancouver,Clark County,"49,910"
-98225,Bellingham,Whatcom County,"49,667"
-98042,Kent,King County,"49,338"
-98118,Seattle,King County,"48,874"
-98837,Moses Lake,Grant County,"46,959"
-98501,Olympia,Thurston County,"46,796"
-98223,Arlington,Snohomish County,"46,117"
-98902,Yakima,Yakima County,"45,929"
-98226,Bellingham,Whatcom County,"45,703"
-98374,Puyallup,Pierce County,"45,555"
-98801,Wenatchee,Chelan County,"44,801"
-99205,Spokane,Spokane County,"44,216"
-98125,Seattle,King County,"43,993"
-99362,Walla Walla,Walla Walla County,"43,028"
-99206,Spokane,Spokane County,"42,850"
-98503,Lacey,Thurston County,"42,263"
-98036,Lynnwood,Snohomish County,"42,164"
-98058,Renton,King County,"42,046"
-98087,Lynnwood,Snohomish County,"41,849"
-98204,Everett,Snohomish County,"41,709"
-98059,Renton,King County,"41,619"
-98031,Kent,King County,"41,615"
-98122,Seattle,King County,"41,268"
-98033,Kirkland,King County,"40,425"
-98277,Oak Harbor,Island County,"40,181"
-98290,Snohomish,Snohomish County,"39,873"
-98006,Bellevue,King County,"39,753"
-98004,Bellevue,King County,"39,161"
-98032,Kent,King County,"39,126"
-98026,Edmonds,Snohomish County,"39,035"
-98198,Seattle,King County,"38,942"
-98030,Kent,King County,"38,798"
-98908,Yakima,Yakima County,"38,671"
-98584,Shelton,Mason County,"38,615"
-98038,Maple Valley,King County,"37,877"
-98366,Port Orchard,Kitsap County,"37,437"
-98604,Battle Ground,Clark County,"37,212"
-98662,Vancouver,Clark County,"37,064"
-98513,Olympia,Thurston County,"36,988"
-98684,Vancouver,Clark County,"36,931"
-98002,Auburn,King County,"36,812"
-98203,Everett,Snohomish County,"36,448"
-98056,Renton,King County,"36,116"
-98117,Seattle,King County,"36,115"
-98404,Tacoma,Pierce County,"36,025"
-98001,Auburn,King County,"35,842"
-99352,Richland,Benton County,"35,618"
-98502,Olympia,Thurston County,"35,551"
-98155,Seattle,King County,"35,550"
-98444,Tacoma,Pierce County,"35,366"
-98168,Seattle,King County,"35,050"
-98021,Bothell,Snohomish County,"34,993"
-98607,Camas,Clark County,"34,877"
-99223,Spokane,Spokane County,"34,868"
-98499,Lakewood,Pierce County,"34,207"
-98229,Bellingham,Whatcom County,"34,157"
-99163,Pullman,Whitman County,"33,829"
-98445,Tacoma,Pierce County,"33,252"
-98901,Yakima,Yakima County,"33,106"
-98370,Poulsbo,Kitsap County,"32,862"
-98375,Puyallup,Pierce County,"32,595"
-99337,Kennewick,Benton County,"32,581"
-98144,Seattle,King County,"32,540"
-98338,Graham,Pierce County,"32,522"
-98926,Ellensburg,Kittitas County,"32,327"
-98312,Bremerton,Kitsap County,"32,288"
-98109,Seattle,King County,"32,251"
-99207,Spokane,Spokane County,"32,219"
-98272,Monroe,Snohomish County,"31,866"
-98802,East Wenatchee,Douglas County,"31,801"
-98683,Vancouver,Clark County,"31,504"
-98029,Issaquah,King County,"31,227"
-98367,Port Orchard,Kitsap County,"31,186"
-98074,Sammamish,King County,"31,026"
-98512,Olympia,Thurston County,"30,784"
-98382,Sequim,Clallam County,"30,777"
-98201,Everett,Snohomish County,"30,587"
-98685,Vancouver,Clark County,"30,534"
-98273,Mount Vernon,Skagit County,"30,430"
-98466,Tacoma,Pierce County,"30,405"
-98271,Marysville,Snohomish County,"30,262"
-98373,Puyallup,Pierce County,"30,096"
-98037,Lynnwood,Snohomish County,"29,720"
-98409,Tacoma,Pierce County,"28,645"
-98498,Lakewood,Pierce County,"28,256"
-98106,Seattle,King County,"28,243"
-98107,Seattle,King County,"28,170"
-98146,Seattle,King County,"28,088"
-98335,Gig Harbor,Pierce County,"28,002"
-98665,Vancouver,Clark County,"27,947"
-98027,Issaquah,King County,"27,915"
-98116,Seattle,King County,"27,871"
-98284,Sedro Woolley,Skagit County,"27,688"
-98011,Bothell,King County,"27,573"
-98007,Bellevue,King County,"27,571"
-98311,Bremerton,Kitsap County,"27,527"
-98188,Seattle,King County,"27,523"
-98296,Snohomish,Snohomish County,"27,436"
-99216,Spokane,Spokane County,"27,302"
-98516,Olympia,Thurston County,"27,212"
-98248,Ferndale,Whatcom County,"27,147"
-98008,Bellevue,King County,"27,060"
-98626,Kelso,Cowlitz County,"27,000"
-98531,Centralia,Lewis County,"26,931"
-98178,Seattle,King County,"26,760"
-98532,Chehalis,Lewis County,"26,624"
-98372,Puyallup,Pierce County,"26,470"
-98597,Yelm,Thurston County,"25,982"
-98119,Seattle,King County,"25,906"
-98102,Seattle,King County,"25,827"
-98292,Stanwood,Snohomish County,"25,757"
-99354,Richland,Benton County,"25,676"
-98040,Mercer Island,King County,"25,464"
-98075,Sammamish,King County,"25,202"
-98944,Sunnyside,Benton County,"25,176"
-98072,Woodinville,King County,"25,034"
-98642,Ridgefield,Clark County,"25,005"
-98520,Aberdeen,Grays Harbor County,"24,989"
-98110,Bainbridge Island,Kitsap County,"24,681"
-98362,Port Angeles,Clallam County,"24,544"
-99224,Spokane,Spokane County,"24,455"
-98055,Renton,King County,"24,429"
-98405,Tacoma,Pierce County,"24,264"
-98671,Washougal,Skamania County,"23,871"
-98108,Seattle,King County,"23,762"
-98028,Kenmore,King County,"23,611"
-98112,Seattle,King County,"23,456"
-98664,Vancouver,Clark County,"23,395"
-98406,Tacoma,Pierce County,"22,994"
-98371,Puyallup,Pierce County,"22,983"
-98221,Anacortes,Skagit County,"22,969"
-98053,Redmond,King County,"22,765"
-98383,Silverdale,Kitsap County,"22,764"
-98166,Seattle,King County,"22,418"
-98199,Seattle,King County,"22,359"
-98264,Lynden,Whatcom County,"22,334"
-99004,Cheney,Spokane County,"22,210"
-98022,Enumclaw,King County,"22,163"
-98422,Tacoma,Pierce County,"22,066"
-98005,Bellevue,King County,"22,030"
-99203,Spokane,Spokane County,"21,984"
-98310,Bremerton,Kitsap County,"21,692"
-98408,Tacoma,Pierce County,"21,438"
-98275,Mukilteo,Snohomish County,"21,365"
-98043,Mountlake Terrace,Snohomish County,"21,347"
-98177,Seattle,King County,"21,114"
-98126,Seattle,King County,"21,102"
-98407,Tacoma,Pierce County,"21,050"
-99212,Spokane,Spokane County,"21,013"
-99202,Spokane,Spokane County,"20,829"
-98121,Seattle,King County,"20,562"
-98686,Vancouver,Clark County,"20,518"
-99403,Clarkston,Asotin County,"20,425"
-98433,Tacoma,Pierce County,"20,342"
-98332,Gig Harbor,Pierce County,"19,708"
-99344,Othello,Adams County,"19,630"
-99016,Greenacres,Spokane County,"19,620"
-99217,Spokane,Spokane County,"19,533"
-98020,Edmonds,Snohomish County,"19,323"
-98506,Olympia,Thurston County,"18,968"
-98230,Blaine,Whatcom County,"18,605"
-98274,Mount Vernon,Skagit County,"18,360"
-99338,Kennewick,Benton County,"18,312"
-99353,West Richland,Benton County,"18,264"
-98942,Selah,Yakima County,"18,047"
-98282,Camano Island,Island County,"17,642"
-98903,Yakima,Yakima County,"17,590"
-98136,Seattle,King County,"17,420"
-98368,Port Townsend,Jefferson County,"17,046"
-98233,Burlington,Skagit County,"16,952"
-98321,Buckley,Pierce County,"16,936"
-99218,Spokane,Spokane County,"16,305"
-98101,Seattle,King County,"16,302"
-98065,Snoqualmie,King County,"15,960"
-98674,Woodland,Cowlitz County,"15,679"
-99037,Veradale,Spokane County,"15,464"
-98045,North Bend,King County,"15,412"
-98663,Vancouver,Clark County,"15,365"
-98467,University Place,Pierce County,"15,140"
-98930,Grandview,Yakima County,"15,089"
-98104,Seattle,King County,"15,052"
-98360,Orting,Pierce County,"14,976"
-98077,Woodinville,King County,"14,287"
-99350,Prosser,Benton County,"14,287"
-98363,Port Angeles,Clallam County,"14,284"
-98579,Rochester,Thurston County,"14,259"
-99201,Spokane,Spokane County,"14,246"
-99006,Deer Park,Spokane County,"13,888"
-98446,Tacoma,Pierce County,"13,821"
-98660,Vancouver,Clark County,"13,146"
-98951,Wapato,Yakima County,"13,145"
-98948,Toppenish,Yakima County,"13,015"
-98848,Quincy,Grant County,"12,959"
-99114,Colville,Stevens County,"12,948"
-98057,Renton,King County,"12,774"
-98823,Ephrata,Grant County,"12,638"
-98528,Belfair,Mason County,"12,393"
-98550,Hoquiam,Grays Harbor County,"12,254"
-99019,Liberty Lake,Spokane County,"12,245"
-98424,Fife,Pierce County,"12,026"
-98390,Sumner,Pierce County,"11,482"
-98580,Roy,Pierce County,"11,455"
-98019,Duvall,King County,"11,281"
-98329,Gig Harbor,Pierce County,"11,223"
-98070,Vashon,King County,"10,939"
-98148,Seattle,King County,"10,652"
-99005,Colbert,Spokane County,"10,457"
-98328,Eatonville,Pierce County,"10,451"
-98418,Tacoma,Pierce County,"10,082"
-99324,College Place,Walla Walla County,"10,076"
-99021,Mead,Spokane County,"10,058"
-99320,Benton City,Benton County,"10,023"
-98541,Elma,Grays Harbor County,"10,004"
-98346,Kingston,Kitsap County,"9,973"
-98327,Dupont,Pierce County,"9,955"
-98252,Granite Falls,Snohomish County,"9,905"
-98629,La Center,Clark County,"9,783"
-98606,Brush Prairie,Clark County,"9,528"
-98611,Castle Rock,Cowlitz County,"9,341"
-98841,Omak,Okanogan County,"9,218"
-99156,Newport,Pend Oreille County,"9,132"
-99022,Medical Lake,Spokane County,"9,012"
-98250,Friday Harbor,San Juan County,"8,953"
-99026,Nine Mile Falls,Spokane County,"8,828"
-98337,Bremerton,Kitsap County,"8,785"
-99001,Airway Heights,Spokane County,"8,684"
-98403,Tacoma,Pierce County,"8,613"
-98247,Everson,Whatcom County,"8,468"
-98354,Milton,Pierce County,"8,146"
-98936,Moxee,Yakima County,"7,787"
-98826,Leavenworth,Chelan County,"7,689"
-98239,Coupeville,Island County,"7,634"
-98014,Carnation,King County,"7,626"
-98563,Montesano,Grays Harbor County,"7,611"
-98620,Goldendale,Klickitat County,"7,584"
-98922,Cle Elum,Kittitas County,"7,577"
-98815,Cashmere,Chelan County,"7,562"
-99349,Mattawa,Grant County,"7,531"
-98465,Tacoma,Pierce County,"7,528"
-98294,Sultan,Snohomish County,"7,516"
-98596,Winlock,Lewis County,"7,483"
-98589,Tenino,Thurston County,"7,448"
-98577,Raymond,Pacific County,"7,371"
-98675,Yacolt,Clark County,"7,198"
-99204,Spokane,Spokane County,"7,189"
-98402,Tacoma,Pierce County,"7,088"
-98388,Steilacoom,Pierce County,"7,051"
-98953,Zillah,Yakima County,"7,043"
-98047,Pacific,King County,"7,014"
-98672,White Salmon,Klickitat County,"6,997"
-98569,Ocean Shores,Grays Harbor County,"6,945"
-98816,Chelan,Chelan County,"6,901"
-98625,Kalama,Cowlitz County,"6,827"
-98236,Clinton,Island County,"6,790"
-99141,Kettle Falls,Ferry County,"6,160"
-98010,Black Diamond,King County,"6,128"
-98315,Silverdale,Kitsap County,"6,045"
-99027,Otis Orchards,Spokane County,"5,973"
-99326,Connell,Franklin County,"5,900"
-98443,Tacoma,Pierce County,"5,899"
-98855,Tonasket,Okanogan County,"5,806"
-98439,Lakewood,Pierce County,"5,679"
-98331,Forks,Jefferson County,"5,671"
-99025,Newman Lake,Spokane County,"5,668"
-98380,Seabeck,Kitsap County,"5,582"
-98260,Langley,Island County,"5,434"
-98812,Brewster,Okanogan County,"5,422"
-98365,Port Ludlow,Jefferson County,"5,259"
-98851,Soap Lake,Grant County,"5,196"
-98576,Rainier,Thurston County,"5,099"
-98024,Fall City,King County,"5,066"
-98349,Lakebay,Pierce County,"5,050"
-98237,Concrete,Skagit County,"4,979"
-98640,Ocean Park,Pacific County,"4,944"
-99109,Chewelah,Stevens County,"4,894"
-98359,Olalla,Kitsap County,"4,889"
-98932,Granger,Yakima County,"4,868"
-99009,Elk,Spokane County,"4,868"
-98840,Okanogan,Okanogan County,"4,775"
-98251,Gold Bar,Snohomish County,"4,703"
-98937,Naches,Yakima County,"4,598"
-98257,La Conner,Skagit County,"4,484"
-98570,Onalaska,Lewis County,"4,417"
-99003,Chattaroy,Spokane County,"4,413"
-98935,Mabton,Yakima County,"4,378"
-98249,Freeland,Island County,"4,372"
-98844,Oroville,Okanogan County,"4,348"
-98524,Allyn,Mason County,"4,226"
-99323,Burbank,Walla Walla County,"4,219"
-98557,Mccleary,Grays Harbor County,"4,144"
-98245,Eastsound,San Juan County,"4,088"
-99122,Davenport,Lincoln County,"4,037"
-99111,Colfax,Whitman County,"4,012"
-98266,Maple Falls,Whatcom County,"3,983"
-99357,Royal City,Grant County,"3,973"
-98232,Bow,Skagit County,"3,939"
-98051,Ravensdale,King County,"3,827"
-98831,Manson,Chelan County,"3,814"
-99328,Dayton,Columbia County,"3,669"
-98591,Toledo,Lewis County,"3,667"
-98333,Fox Island,Pierce County,"3,644"
-98857,Warden,Grant County,"3,545"
-99343,Mesa,Franklin County,"3,522"
-98648,Stevenson,Skamania County,"3,488"
-98240,Custer,Whatcom County,"3,426"
-98631,Long Beach,Pacific County,"3,387"
-98339,Port Hadlock,Jefferson County,"3,295"
-98244,Deming,Whatcom County,"3,284"
-98612,Cathlamet,Wahkiakum County,"3,283"
-98392,Suquamish,Kitsap County,"3,203"
-98813,Bridgeport,Douglas County,"3,191"
-99011,Fairchild Air Force Base,Spokane County,"3,184"
-98261,Lopez Island,San Juan County,"3,112"
-98564,Mossyrock,Lewis County,"3,106"
-98862,Winthrop,Okanogan County,"3,075"
-98295,Sumas,Whatcom County,"3,033"
-98537,Cosmopolis,Grays Harbor County,"3,008"
-98546,Grapeview,Mason County,"2,965"
-98601,Amboy,Clark County,"2,952"
-99166,Republic,Ferry County,"2,936"
-98039,Medina,King County,"2,923"
-98610,Carson,Skamania County,"2,846"
-98595,Westport,Grays Harbor County,"2,814"
-98947,Tieton,Yakima County,"2,786"
-98340,Hansville,Kitsap County,"2,692"
-98568,Oakville,Grays Harbor County,"2,643"
-98548,Hoodsport,Mason County,"2,593"
-98856,Twisp,Okanogan County,"2,497"
-99169,Ritzville,Adams County,"2,494"
-98847,Peshastin,Chelan County,"2,481"
-99347,Pomeroy,Garfield County,"2,429"
-98195,Seattle,King County,"2,398"
-98377,Randle,Lewis County,"2,392"
-98356,Morton,Lewis County,"2,367"
-99148,Loon Lake,Stevens County,"2,358"
-98278,Oak Harbor,Island County,"2,351"
-98843,Orondo,Douglas County,"2,243"
-98241,Darrington,Snohomish County,"2,150"
-98376,Quilcene,Jefferson County,"2,109"
-98253,Greenbank,Island County,"2,106"
-98828,Malaga,Chelan County,"2,075"
-98645,Silverlake,Cowlitz County,"2,044"
-98822,Entiat,Chelan County,"1,983"
-98635,Lyle,Klickitat County,"1,975"
-98938,Outlook,Yakima County,"1,946"
-99181,Valley,Stevens County,"1,928"
-98586,South Bend,Pacific County,"1,924"
-99173,Springdale,Stevens County,"1,898"
-98858,Waterville,Douglas County,"1,850"
-98592,Union,Mason County,"1,848"
-98850,Rock Island,Douglas County,"1,749"
-99029,Reardan,Lincoln County,"1,747"
-98952,White Swan,Yakima County,"1,724"
-98624,Ilwaco,Pacific County,"1,706"
-99361,Waitsburg,Walla Walla County,"1,668"
-99101,Addy,Stevens County,"1,635"
-98303,Anderson Island,Pierce County,"1,621"
-99402,Asotin,Asotin County,"1,594"
-99348,Prescott,Walla Walla County,"1,590"
-98314,Bremerton,Kitsap County,"1,565"
-98276,Nooksack,Whatcom County,"1,564"
-98588,Tahuya,Mason County,"1,564"
-98638,Naselle,Pacific County,"1,561"
-98357,Neah Bay,Clallam County,"1,550"
-99036,Valleyford,Spokane County,"1,546"
-99116,Coulee Dam,Okanogan County,"1,538"
-99119,Cusick,Pend Oreille County,"1,514"
-99013,Ford,Stevens County,"1,507"
-98320,Brinnon,Jefferson County,"1,483"
-98325,Chimacum,Jefferson County,"1,481"
-99110,Clayton,Stevens County,"1,465"
-98593,Vader,Lewis County,"1,449"
-99360,Touchet,Walla Walla County,"1,400"
-99185,Wilbur,Lincoln County,"1,385"
-98846,Pateros,Okanogan County,"1,381"
-99133,Grand Coulee,Douglas County,"1,377"
-98605,Bingen,Skamania County,"1,373"
-99161,Palouse,Whitman County,"1,366"
-98342,Indianola,Kitsap County,"1,362"
-98281,Point Roberts,Whatcom County,"1,249"
-98394,Vaughn,Pierce County,"1,244"
-98547,Grayland,Pacific County,"1,240"
-99115,Coulee City,Douglas County,"1,224"
-98650,Trout Lake,Klickitat County,"1,216"
-98933,Harrah,Yakima County,"1,195"
-98603,Ariel,Cowlitz County,"1,192"
-99159,Odessa,Lincoln County,"1,186"
-98639,North Bonneville,Skamania County,"1,146"
-98207,Everett,Snohomish County,"1,143"
-98351,Longbranch,Pierce County,"1,119"
-99012,Fairfield,Spokane County,"1,111"
-99031,Spangle,Spokane County,"1,110"
-99138,Inchelium,Ferry County,"1,103"
-98849,Riverside,Okanogan County,"1,098"
-98447,Tacoma,Pierce County,"1,067"
-98326,Clallam Bay,Clallam County,"1,066"
-99251,Spokane,Spokane County,"1,056"
-98617,Dallesport,Klickitat County,"1,039"
-98934,Kittitas,Kittitas County,"1,033"
-99118,Curlew,Ferry County,997
-98923,Cowiche,Yakima County,990
-99032,Sprague,Lincoln County,982
-99155,Nespelem,Okanogan County,977
-99171,Saint John,Whitman County,969
-98262,Lummi Island,Whatcom County,965
-99023,Mica,Spokane County,964
-98587,Taholah,Grays Harbor County,959
-99170,Rosalia,Whitman County,955
-99126,Evans,Stevens County,952
-98651,Underwood,Skamania County,944
-98304,Ashford,Pierce County,925
-98836,Monitor,Chelan County,883
-98358,Nordland,Jefferson County,882
-99330,Eltopia,Franklin County,876
-98134,Seattle,King County,852
-99123,Electric City,Grant County,852
-99321,Beverly,Grant County,851
-98649,Toutle,Cowlitz County,849
-99130,Garfield,Whitman County,833
-98416,Tacoma,Pierce County,830
-98941,Roslyn,Kittitas County,827
-99139,Ione,Pend Oreille County,800
-98421,Tacoma,Pierce County,790
-99033,Tekoa,Whitman County,790
-98572,Pe Ell,Lewis County,778
-98355,Mineral,Lewis County,749
-99180,Usk,Pend Oreille County,741
-99341,Lind,Adams County,736
-99167,Rice,Stevens County,720
-98943,South Cle Elum,Kittitas County,715
-98542,Ethel,Lewis County,708
-99143,Lacrosse,Whitman County,691
-99129,Fruitland,Stevens County,690
-98814,Carlton,Okanogan County,688
-98619,Glenwood,Klickitat County,659
-98644,Seaview,Pacific County,657
-98323,Carbonado,Pierce County,655
-99157,Northport,Stevens County,655
-98821,Dryden,Chelan County,646
-98396,Wilkeson,Pierce County,643
-99040,Wellpinit,Stevens County,643
-98829,Malott,Okanogan County,638
-98533,Cinebar,Lewis County,630
-99125,Endicott,Whitman County,626
-99158,Oakesdale,Whitman County,619
-98279,Olga,San Juan County,614
-99103,Almira,Lincoln County,603
-98613,Centerville,Klickitat County,602
-98336,Glenoma,Lewis County,594
-99030,Rockford,Spokane County,592
-98430,Camp Murray,Pierce County,580
-98585,Silver Creek,Lewis County,580
-98220,Acme,Whatcom County,577
-99134,Harrington,Lincoln County,572
-98235,Clearlake,Skagit County,570
-99117,Creston,Lincoln County,568
-99140,Keller,Ferry County,568
-99179,Uniontown,Whitman County,568
-98830,Mansfield,Douglas County,562
-98438,Mcchord Afb,Pierce County,560
-98530,Bucoda,Thurston County,558
-99113,Colton,Whitman County,555
-98925,Easton,Kittitas County,533
-98614,Chinook,Pacific County,532
-98068,Snoqualmie Pass,Kittitas County,528
-99102,Albion,Whitman County,509
-98673,Wishram,Klickitat County,502
-99258,Spokane,Spokane County,502
-98643,Rosburg,Wahkiakum County,482
-98827,Loomis,Okanogan County,479
-98283,Rockport,Whatcom County,466
-98385,South Prairie,Pierce County,464
-99135,Hartline,Grant County,452
-98556,Littlerock,Thurston County,448
-99008,Edwall,Lincoln County,439
-98565,Napavine,Lewis County,432
-99153,Metaline Falls,Pend Oreille County,432
-98581,Ryderwood,Cowlitz County,425
-98361,Packwood,Lewis County,420
-98940,Ronald,Kittitas County,409
-99322,Bickleton,Klickitat County,406
-98505,Olympia,Thurston County,403
-99137,Hunters,Stevens County,399
-98280,Orcas,San Juan County,398
-98538,Curtis,Lewis County,397
-98590,Tokeland,Pacific County,396
-98628,Klickitat,Klickitat County,393
-99401,Anatone,Asotin County,383
-99346,Plymouth,Benton County,372
-98946,Thorp,Kittitas County,363
-98859,Wauconda,Okanogan County,353
-98350,La Push,Clallam County,352
-99121,Danville,Ferry County,332
-99356,Roosevelt,Klickitat County,331
-98535,Copalis Beach,Grays Harbor County,322
-98256,Index,Snohomish County,318
-98255,Hamilton,Skagit County,312
-99371,Washtucna,Adams County,309
-98243,Deer Harbor,San Juan County,297
-99128,Farmington,Whitman County,289
-98345,Keyport,Kitsap County,284
-98381,Sekiu,Clallam County,282
-98566,Neilton,Grays Harbor County,282
-99150,Malo,Ferry County,281
-98647,Skamokawa,Wahkiakum County,272
-99124,Elmer City,Okanogan County,270
-99018,Latah,Spokane County,264
-98305,Beaver,Clallam County,258
-98621,Grays River,Pacific County,257
-98552,Humptulips,Grays Harbor County,248
-98834,Methow,Okanogan County,245
-98527,Bay Center,Pacific County,244
-98164,Seattle,King County,239
-98555,Lilliwaup,Mason County,238
-98582,Salkum,Lewis County,236
-98824,George,Grant County,231
-98860,Wilson Creek,Grant County,229
-99017,Lamont,Whitman County,226
-98224,Baring,King County,220
-99034,Tumtum,Stevens County,215
-98819,Conconully,Okanogan County,205
-98845,Palisades,Douglas County,199
-99149,Malden,Whitman County,194
-99151,Marcus,Stevens County,182
-98288,Skykomish,King County,180
-98263,Lyman,Skagit County,178
-98526,Amanda Park,Grays Harbor County,175
-99039,Waverly,Spokane County,171
-99335,Kahlotus,Franklin County,171
-99345,Paterson,Benton County,164
-98267,Marblemount,Skagit County,160
-98539,Doty,Lewis County,159
-98286,Shaw Island,San Juan County,158
-99329,Dixie,Walla Walla County,156
-98832,Marlin,Grant County,153
-98833,Mazama,Okanogan County,153
-99147,Lincoln,Lincoln County,152
-98583,Satsop,Grays Harbor County,144
-99152,Metaline,Pend Oreille County,144
-98817,Chelan Falls,Chelan County,143
-99176,Thornton,Whitman County,136
-98575,Quinault,Grays Harbor County,134
-98602,Appleton,Klickitat County,124
-99131,Gifford,Stevens County,122
-98811,Ardenvoir,Chelan County,120
-98222,Blakely Island,San Juan County,117
-99359,Starbuck,Columbia County,100
-99363,Wallula,Walla Walla County,96
-99333,Hooper,Whitman County,91
-98939,Parker,Yakima County,90
-98616,Cougar,Skamania County,79
-98562,Moclips,Grays Harbor County,78
-98560,Matlock,Mason County,76
-98571,Pacific Beach,Grays Harbor County,76
-98050,Preston,King County,73
-98670,Wahkiacus,Klickitat County,61
-98558,Mckenna,Pierce County,60
-99146,Laurier,Ferry County,59
-98364,Port Gamble,Kitsap County,57
-98297,Waldron,San Juan County,55
-98641,Oysterville,Pacific County,55
-98950,Vantage,Kittitas County,54
-99160,Orient,Ferry County,47
-98238,Conway,Skagit County,45
-99154,Mohler,Lincoln County,38
-98623,Husum,Klickitat County,36
-98852,Stehekin,Chelan County,32
-99174,Steptoe,Whitman County,32
-99105,Benge,Adams County,31
-98330,Elbe,Pierce County,24
-99144,Lamona,Lincoln County,19
-99136,Hay,Whitman County,17
-99020,Marshall,Spokane County,15
-98353,Manchester,Kitsap County,14
-98544,Galvin,Lewis County,7
-98025,Hobart,King County,0
-98154,Seattle,King County,0
-98158,Seattle,King County,0
-98174,Seattle,King County,0
-98536,Copalis Crossing,Grays Harbor County,0
-98559,Malone,Grays Harbor County,0
-98609,Carrolls,Cowlitz County,0
-98853,Stratford,Grant County,0
-98921,Buena,Yakima County,0
-99014,Four Lakes,Spokane County,0
+﻿ZIP,household_count,City/Town,County,Population
+83856,3969,,,0
+98001,12369,Auburn,King County,35842
+98002,15279,Auburn,King County,36812
+98003,20380,Federal Way,King County,51329
+98004,20977,Bellevue,King County,39161
+98005,9420,Bellevue,King County,22030
+98006,14754,Bellevue,King County,39753
+98007,12403,Bellevue,King County,27571
+98008,10048,Bellevue,King County,27060
+98010,2540,Black Diamond,King County,6128
+98011,12424,Bothell,King County,27573
+98012,28174,Bothell,Snohomish County,75555
+98014,2858,Carnation,King County,7626
+98019,4090,Duvall,King County,11281
+98020,9379,Edmonds,Snohomish County,19323
+98021,12629,Bothell,Snohomish County,34993
+98022,9828,Enumclaw,King County,22163
+98023,18777,Federal Way,King County,50778
+98024,2083,Fall City,King County,5066
+98025,51,Hobart,King County,0
+98026,15884,Edmonds,Snohomish County,39035
+98027,12071,Issaquah,King County,27915
+98028,9362,Kenmore,King County,23611
+98029,12667,Issaquah,King County,31227
+98030,13519,Kent,King County,38798
+98031,14342,Kent,King County,41615
+98032,15639,Kent,King County,39126
+98033,18211,Kirkland,King County,40425
+98034,22488,Kirkland,King County,52636
+98036,17228,Lynnwood,Snohomish County,42164
+98037,12032,Lynnwood,Snohomish County,29720
+98038,13157,Maple Valley,King County,37877
+98039,1077,Medina,King County,2923
+98040,10454,Mercer Island,King County,25464
+98042,17365,Kent,King County,49338
+98043,9493,Mountlake Terrace,Snohomish County,21347
+98045,5871,North Bend,King County,15412
+98047,2389,Pacific,King County,7014
+98050,75,Preston,King County,73
+98051,1292,Ravensdale,King County,3827
+98052,34946,Redmond,King County,77324
+98053,8707,Redmond,King County,22765
+98055,9994,Renton,King County,24429
+98056,15609,Renton,King County,36116
+98057,6656,Renton,King County,12774
+98058,16399,Renton,King County,42046
+98059,15001,Renton,King County,41619
+98065,5681,Snoqualmie,King County,15960
+98068,720,Snoqualmie Pass,Kittitas County,528
+98070,5616,Vashon,King County,10939
+98072,9897,Woodinville,King County,25034
+98074,10220,Sammamish,King County,31026
+98075,8303,Sammamish,King County,25202
+98077,4865,Woodinville,King County,14287
+98087,16625,Lynnwood,Snohomish County,41849
+98092,17532,Auburn,King County,50679
+98101,13193,Seattle,King County,16302
+98102,17944,Seattle,King County,25827
+98103,27857,Seattle,King County,51878
+98104,10803,Seattle,King County,15052
+98105,20582,Seattle,King County,50302
+98106,12107,Seattle,King County,28243
+98107,16538,Seattle,King County,28170
+98108,9096,Seattle,King County,23762
+98109,23162,Seattle,King County,32251
+98110,10728,Bainbridge Island,Kitsap County,24681
+98112,11670,Seattle,King County,23456
+98115,24966,Seattle,King County,54457
+98116,14652,Seattle,King County,27871
+98117,15230,Seattle,King County,36115
+98118,19831,Seattle,King County,48874
+98119,15323,Seattle,King County,25906
+98121,15781,Seattle,King County,20562
+98122,24942,Seattle,King County,41268
+98125,21493,Seattle,King County,43993
+98126,10824,Seattle,King County,21102
+98133,24730,Seattle,King County,50921
+98134,241,Seattle,King County,852
+98136,8295,Seattle,King County,17420
+98144,16381,Seattle,King County,32540
+98146,10986,Seattle,King County,28088
+98148,4382,Seattle,King County,10652
+98154,0,Seattle,King County,0
+98155,14526,Seattle,King County,35550
+98158,0,Seattle,King County,0
+98164,137,Seattle,King County,239
+98166,9766,Seattle,King County,22418
+98168,13338,Seattle,King County,35050
+98174,0,Seattle,King County,0
+98177,8178,Seattle,King County,21114
+98178,10018,Seattle,King County,26760
+98188,12025,Seattle,King County,27523
+98195,0,Seattle,King County,2398
+98198,15267,Seattle,King County,38942
+98199,10737,Seattle,King County,22359
+98201,15196,Everett,Snohomish County,30587
+98203,14848,Everett,Snohomish County,36448
+98204,18914,Everett,Snohomish County,41709
+98207,0,Everett,Snohomish County,1143
+98208,22534,Everett,Snohomish County,60723
+98220,207,Acme,Whatcom County,577
+98221,12177,Anacortes,Skagit County,22969
+98222,341,Blakely Island,San Juan County,117
+98223,18224,Arlington,Snohomish County,46117
+98224,250,Baring,King County,220
+98225,24202,Bellingham,Whatcom County,49667
+98226,20609,Bellingham,Whatcom County,45703
+98229,14392,Bellingham,Whatcom County,34157
+98230,9395,Blaine,Whatcom County,18605
+98232,1769,Bow,Skagit County,3939
+98233,7295,Burlington,Skagit County,16952
+98235,193,Clearlake,Skagit County,570
+98236,3489,Clinton,Island County,6790
+98237,2327,Concrete,Skagit County,4979
+98238,44,Conway,Skagit County,45
+98239,4062,Coupeville,Island County,7634
+98240,1200,Custer,Whatcom County,3426
+98241,1143,Darrington,Snohomish County,2150
+98243,408,Deer Harbor,San Juan County,297
+98244,1893,Deming,Whatcom County,3284
+98245,2812,Eastsound,San Juan County,4088
+98247,3257,Everson,Whatcom County,8468
+98248,10576,Ferndale,Whatcom County,27147
+98249,3283,Freeland,Island County,4372
+98250,5998,Friday Harbor,San Juan County,8953
+98251,2226,Gold Bar,Snohomish County,4703
+98252,4441,Granite Falls,Snohomish County,9905
+98253,1742,Greenbank,Island County,2106
+98255,99,Hamilton,Skagit County,312
+98256,359,Index,Snohomish County,318
+98257,2385,La Conner,Skagit County,4484
+98258,18397,Lake Stevens,Snohomish County,50582
+98260,3296,Langley,Island County,5434
+98261,2396,Lopez Island,San Juan County,3112
+98262,912,Lummi Island,Whatcom County,965
+98263,82,Lyman,Skagit County,178
+98264,8395,Lynden,Whatcom County,22334
+98266,1918,Maple Falls,Whatcom County,3983
+98267,405,Marblemount,Skagit County,160
+98270,19840,Marysville,Snohomish County,52794
+98271,12040,Marysville,Snohomish County,30262
+98272,10313,Monroe,Snohomish County,31866
+98273,11991,Mount Vernon,Skagit County,30430
+98274,7868,Mount Vernon,Skagit County,18360
+98275,8492,Mukilteo,Snohomish County,21365
+98276,557,Nooksack,Whatcom County,1564
+98277,17694,Oak Harbor,Island County,40181
+98278,0,Oak Harbor,Island County,2351
+98279,742,Olga,San Juan County,614
+98280,398,Orcas,San Juan County,398
+98281,2088,Point Roberts,Whatcom County,1249
+98282,8832,Camano Island,Island County,17642
+98283,112,Rockport,Whatcom County,466
+98284,11095,Sedro Woolley,Skagit County,27688
+98286,240,Shaw Island,San Juan County,158
+98288,352,Skykomish,King County,180
+98290,15348,Snohomish,Snohomish County,39873
+98292,10110,Stanwood,Snohomish County,25757
+98294,3144,Sultan,Snohomish County,7516
+98295,1181,Sumas,Whatcom County,3033
+98296,9573,Snohomish,Snohomish County,27436
+98297,182,Waldron,San Juan County,55
+98303,977,Anderson Island,Pierce County,1621
+98304,853,Ashford,Pierce County,925
+98305,114,Beaver,Clallam County,258
+98310,9635,Bremerton,Kitsap County,21692
+98311,11019,Bremerton,Kitsap County,27527
+98312,14450,Bremerton,Kitsap County,32288
+98314,32,Bremerton,Kitsap County,1565
+98315,1161,Silverdale,Kitsap County,6045
+98320,1320,Brinnon,Jefferson County,1483
+98321,6319,Buckley,Pierce County,16936
+98323,263,Carbonado,Pierce County,655
+98325,881,Chimacum,Jefferson County,1481
+98326,412,Clallam Bay,Clallam County,1066
+98327,4014,Dupont,Pierce County,9955
+98328,4309,Eatonville,Pierce County,10451
+98329,4545,Gig Harbor,Pierce County,11223
+98330,54,Elbe,Pierce County,24
+98331,2808,Forks,Jefferson County,5671
+98332,7897,Gig Harbor,Pierce County,19708
+98333,1509,Fox Island,Pierce County,3644
+98335,11457,Gig Harbor,Pierce County,28002
+98336,369,Glenoma,Lewis County,594
+98337,3696,Bremerton,Kitsap County,8785
+98338,11336,Graham,Pierce County,32522
+98339,1681,Port Hadlock,Jefferson County,3295
+98340,1969,Hansville,Kitsap County,2692
+98342,815,Indianola,Kitsap County,1362
+98345,201,Keyport,Kitsap County,284
+98346,4259,Kingston,Kitsap County,9973
+98349,3063,Lakebay,Pierce County,5050
+98350,109,La Push,Clallam County,352
+98351,816,Longbranch,Pierce County,1119
+98353,0,Manchester,Kitsap County,14
+98354,3242,Milton,Pierce County,8146
+98355,340,Mineral,Lewis County,749
+98356,1087,Morton,Lewis County,2367
+98357,591,Neah Bay,Clallam County,1550
+98358,595,Nordland,Jefferson County,882
+98359,1836,Olalla,Kitsap County,4889
+98360,5328,Orting,Pierce County,14976
+98361,1398,Packwood,Lewis County,420
+98362,11829,Port Angeles,Clallam County,24544
+98363,7195,Port Angeles,Clallam County,14284
+98364,0,Port Gamble,Kitsap County,57
+98365,3164,Port Ludlow,Jefferson County,5259
+98366,15391,Port Orchard,Kitsap County,37437
+98367,12918,Port Orchard,Kitsap County,31186
+98368,9739,Port Townsend,Jefferson County,17046
+98370,13849,Poulsbo,Kitsap County,32862
+98371,9937,Puyallup,Pierce County,22983
+98372,10701,Puyallup,Pierce County,26470
+98373,11113,Puyallup,Pierce County,30096
+98374,16645,Puyallup,Pierce County,45555
+98375,10761,Puyallup,Pierce County,32595
+98376,1314,Quilcene,Jefferson County,2109
+98377,1346,Randle,Lewis County,2392
+98380,2123,Seabeck,Kitsap County,5582
+98381,163,Sekiu,Clallam County,282
+98382,15739,Sequim,Clallam County,30777
+98383,9660,Silverdale,Kitsap County,22764
+98385,209,South Prairie,Pierce County,464
+98387,17151,Spanaway,Pierce County,51384
+98388,2846,Steilacoom,Pierce County,7051
+98390,4836,Sumner,Pierce County,11482
+98391,20573,Bonney Lake,Pierce County,56646
+98392,1497,Suquamish,Kitsap County,3203
+98394,578,Vaughn,Pierce County,1244
+98396,330,Wilkeson,Pierce County,643
+98402,4788,Tacoma,Pierce County,7088
+98403,4863,Tacoma,Pierce County,8613
+98404,13174,Tacoma,Pierce County,36025
+98405,11645,Tacoma,Pierce County,24264
+98406,10748,Tacoma,Pierce County,22994
+98407,10545,Tacoma,Pierce County,21050
+98408,8418,Tacoma,Pierce County,21438
+98409,12136,Tacoma,Pierce County,28645
+98416,0,Tacoma,Pierce County,830
+98418,4520,Tacoma,Pierce County,10082
+98421,78,Tacoma,Pierce County,790
+98422,8321,Tacoma,Pierce County,22066
+98424,4558,Fife,Pierce County,12026
+98430,0,Camp Murray,Pierce County,580
+98433,4889,Tacoma,Pierce County,20342
+98438,25,Mcchord Afb,Pierce County,560
+98439,2311,Lakewood,Pierce County,5679
+98443,2294,Tacoma,Pierce County,5899
+98444,13762,Tacoma,Pierce County,35366
+98445,12546,Tacoma,Pierce County,33252
+98446,5447,Tacoma,Pierce County,13821
+98447,0,Tacoma,Pierce County,1067
+98465,3771,Tacoma,Pierce County,7528
+98466,12773,Tacoma,Pierce County,30405
+98467,6718,University Place,Pierce County,15140
+98498,12842,Lakewood,Pierce County,28256
+98499,14683,Lakewood,Pierce County,34207
+98501,19969,Olympia,Thurston County,46796
+98502,15550,Olympia,Thurston County,35551
+98503,18375,Lacey,Thurston County,42263
+98505,0,Olympia,Thurston County,403
+98506,9041,Olympia,Thurston County,18968
+98512,13216,Olympia,Thurston County,30784
+98513,14533,Olympia,Thurston County,36988
+98516,11600,Olympia,Thurston County,27212
+98520,9333,Aberdeen,Grays Harbor County,24989
+98524,2154,Allyn,Mason County,4226
+98526,144,Amanda Park,Grays Harbor County,175
+98527,246,Bay Center,Pacific County,244
+98528,5455,Belfair,Mason County,12393
+98530,195,Bucoda,Thurston County,558
+98531,11070,Centralia,Lewis County,26931
+98532,10300,Chehalis,Lewis County,26624
+98533,343,Cinebar,Lewis County,630
+98535,408,Copalis Beach,Grays Harbor County,322
+98536,28,Copalis Crossing,Grays Harbor County,0
+98537,1166,Cosmopolis,Grays Harbor County,3008
+98538,180,Curtis,Lewis County,397
+98539,74,Doty,Lewis County,159
+98541,4527,Elma,Grays Harbor County,10004
+98542,224,Ethel,Lewis County,708
+98544,35,Galvin,Lewis County,7
+98546,2012,Grapeview,Mason County,2965
+98547,1453,Grayland,Pacific County,1240
+98548,2348,Hoodsport,Mason County,2593
+98550,5373,Hoquiam,Grays Harbor County,12254
+98552,68,Humptulips,Grays Harbor County,248
+98555,858,Lilliwaup,Mason County,238
+98556,0,Littlerock,Thurston County,448
+98557,1622,Mccleary,Grays Harbor County,4144
+98558,0,Mckenna,Pierce County,60
+98559,0,Malone,Grays Harbor County,0
+98560,61,Matlock,Mason County,76
+98562,220,Moclips,Grays Harbor County,78
+98563,3657,Montesano,Grays Harbor County,7611
+98564,1563,Mossyrock,Lewis County,3106
+98565,170,Napavine,Lewis County,432
+98566,121,Neilton,Grays Harbor County,282
+98568,1217,Oakville,Grays Harbor County,2643
+98569,5884,Ocean Shores,Grays Harbor County,6945
+98570,2031,Onalaska,Lewis County,4417
+98571,394,Pacific Beach,Grays Harbor County,76
+98572,348,Pe Ell,Lewis County,778
+98575,162,Quinault,Grays Harbor County,134
+98576,1895,Rainier,Thurston County,5099
+98577,3240,Raymond,Pacific County,7371
+98579,5005,Rochester,Thurston County,14259
+98580,4743,Roy,Pierce County,11455
+98581,225,Ryderwood,Cowlitz County,425
+98582,240,Salkum,Lewis County,236
+98583,38,Satsop,Grays Harbor County,144
+98584,17402,Shelton,Mason County,38615
+98585,367,Silver Creek,Lewis County,580
+98586,901,South Bend,Pacific County,1924
+98587,337,Taholah,Grays Harbor County,959
+98588,1493,Tahuya,Mason County,1564
+98589,3122,Tenino,Thurston County,7448
+98590,294,Tokeland,Pacific County,396
+98591,1617,Toledo,Lewis County,3667
+98592,954,Union,Mason County,1848
+98593,694,Vader,Lewis County,1449
+98595,2109,Westport,Grays Harbor County,2814
+98596,2676,Winlock,Lewis County,7483
+98597,10108,Yelm,Thurston County,25982
+98601,1187,Amboy,Clark County,2952
+98602,147,Appleton,Klickitat County,124
+98603,646,Ariel,Cowlitz County,1192
+98604,13557,Battle Ground,Clark County,37212
+98605,589,Bingen,Skamania County,1373
+98606,3538,Brush Prairie,Clark County,9528
+98607,12667,Camas,Clark County,34877
+98609,0,Carrolls,Cowlitz County,0
+98610,1459,Carson,Skamania County,2846
+98611,3687,Castle Rock,Cowlitz County,9341
+98612,1530,Cathlamet,Wahkiakum County,3283
+98613,230,Centerville,Klickitat County,602
+98614,364,Chinook,Pacific County,532
+98616,420,Cougar,Skamania County,79
+98617,543,Dallesport,Klickitat County,1039
+98619,305,Glenwood,Klickitat County,659
+98620,3629,Goldendale,Klickitat County,7584
+98621,87,Grays River,Pacific County,257
+98623,25,Husum,Klickitat County,36
+98624,800,Ilwaco,Pacific County,1706
+98625,2995,Kalama,Cowlitz County,6827
+98626,10642,Kelso,Cowlitz County,27000
+98628,222,Klickitat,Klickitat County,393
+98629,3547,La Center,Clark County,9783
+98631,3143,Long Beach,Pacific County,3387
+98632,21787,Longview,Cowlitz County,50837
+98635,943,Lyle,Klickitat County,1975
+98638,732,Naselle,Pacific County,1561
+98639,546,North Bonneville,Skamania County,1146
+98640,4991,Ocean Park,Pacific County,4944
+98641,168,Oysterville,Pacific County,55
+98642,9736,Ridgefield,Clark County,25005
+98643,268,Rosburg,Wahkiakum County,482
+98644,852,Seaview,Pacific County,657
+98645,891,Silverlake,Cowlitz County,2044
+98647,175,Skamokawa,Wahkiakum County,272
+98648,1460,Stevenson,Skamania County,3488
+98649,419,Toutle,Cowlitz County,849
+98650,669,Trout Lake,Klickitat County,1216
+98651,445,Underwood,Skamania County,944
+98660,7048,Vancouver,Clark County,13146
+98661,22291,Vancouver,Clark County,49910
+98662,14609,Vancouver,Clark County,37064
+98663,6753,Vancouver,Clark County,15365
+98664,9656,Vancouver,Clark County,23395
+98665,11894,Vancouver,Clark County,27947
+98670,34,Wahkiacus,Klickitat County,61
+98671,9090,Washougal,Skamania County,23871
+98672,3176,White Salmon,Klickitat County,6997
+98673,171,Wishram,Klickitat County,502
+98674,5830,Woodland,Cowlitz County,15679
+98675,2292,Yacolt,Clark County,7198
+98682,24288,Vancouver,Clark County,66821
+98683,14352,Vancouver,Clark County,31504
+98684,14355,Vancouver,Clark County,36931
+98685,11901,Vancouver,Clark County,30534
+98686,8348,Vancouver,Clark County,20518
+98801,18034,Wenatchee,Chelan County,44801
+98802,12516,East Wenatchee,Douglas County,31801
+98811,10,Ardenvoir,Chelan County,120
+98812,1898,Brewster,Okanogan County,5422
+98813,920,Bridgeport,Douglas County,3191
+98814,309,Carlton,Okanogan County,688
+98815,3007,Cashmere,Chelan County,7562
+98816,5398,Chelan,Chelan County,6901
+98817,60,Chelan Falls,Chelan County,143
+98819,237,Conconully,Okanogan County,205
+98821,193,Dryden,Chelan County,646
+98822,964,Entiat,Chelan County,1983
+98823,4646,Ephrata,Grant County,12638
+98824,73,George,Grant County,231
+98826,5868,Leavenworth,Chelan County,7689
+98827,260,Loomis,Okanogan County,479
+98828,905,Malaga,Chelan County,2075
+98829,235,Malott,Okanogan County,638
+98830,287,Mansfield,Douglas County,562
+98831,2253,Manson,Chelan County,3814
+98832,85,Marlin,Grant County,153
+98833,370,Mazama,Okanogan County,153
+98834,116,Methow,Okanogan County,245
+98836,267,Monitor,Chelan County,883
+98837,18651,Moses Lake,Grant County,46959
+98840,2258,Okanogan,Okanogan County,4775
+98841,4056,Omak,Okanogan County,9218
+98843,1469,Orondo,Douglas County,2243
+98844,3017,Oroville,Okanogan County,4348
+98845,73,Palisades,Douglas County,199
+98846,585,Pateros,Okanogan County,1381
+98847,1099,Peshastin,Chelan County,2481
+98848,5476,Quincy,Grant County,12959
+98849,637,Riverside,Okanogan County,1098
+98850,680,Rock Island,Douglas County,1749
+98851,2078,Soap Lake,Grant County,5196
+98852,137,Stehekin,Chelan County,32
+98853,14,Stratford,Grant County,0
+98855,3120,Tonasket,Okanogan County,5806
+98856,1544,Twisp,Okanogan County,2497
+98857,1355,Warden,Grant County,3545
+98858,853,Waterville,Douglas County,1850
+98859,214,Wauconda,Okanogan County,353
+98860,136,Wilson Creek,Grant County,229
+98862,2227,Winthrop,Okanogan County,3075
+98901,12201,Yakima,Yakima County,33106
+98902,17723,Yakima,Yakima County,45929
+98903,6541,Yakima,Yakima County,17590
+98908,15496,Yakima,Yakima County,38671
+98921,7,Buena,Yakima County,0
+98922,5445,Cle Elum,Kittitas County,7577
+98923,609,Cowiche,Yakima County,990
+98925,797,Easton,Kittitas County,533
+98926,14900,Ellensburg,Kittitas County,32327
+98930,4910,Grandview,Yakima County,15089
+98932,1502,Granger,Yakima County,4868
+98933,415,Harrah,Yakima County,1195
+98934,511,Kittitas,Kittitas County,1033
+98935,1191,Mabton,Yakima County,4378
+98936,2782,Moxee,Yakima County,7787
+98937,2525,Naches,Yakima County,4598
+98938,567,Outlook,Yakima County,1946
+98939,29,Parker,Yakima County,90
+98940,1054,Ronald,Kittitas County,409
+98941,641,Roslyn,Kittitas County,827
+98942,7629,Selah,Yakima County,18047
+98943,348,South Cle Elum,Kittitas County,715
+98944,6806,Sunnyside,Benton County,25176
+98946,147,Thorp,Kittitas County,363
+98947,1006,Tieton,Yakima County,2786
+98948,3620,Toppenish,Yakima County,13015
+98950,34,Vantage,Kittitas County,54
+98951,3672,Wapato,Yakima County,13145
+98952,547,White Swan,Yakima County,1724
+98953,2343,Zillah,Yakima County,7043
+99001,2739,Airway Heights,Spokane County,8684
+99003,2115,Chattaroy,Spokane County,4413
+99004,8992,Cheney,Spokane County,22210
+99005,3656,Colbert,Spokane County,10457
+99006,5287,Deer Park,Spokane County,13888
+99008,162,Edwall,Lincoln County,439
+99009,1879,Elk,Spokane County,4868
+99011,808,Fairchild Air Force Base,Spokane County,3184
+99012,369,Fairfield,Spokane County,1111
+99013,593,Ford,Stevens County,1507
+99014,15,Four Lakes,Spokane County,0
+99016,8004,Greenacres,Spokane County,19620
+99017,106,Lamont,Whitman County,226
+99018,140,Latah,Spokane County,264
+99019,5202,Liberty Lake,Spokane County,12245
+99020,7,Marshall,Spokane County,15
+99021,3679,Mead,Spokane County,10058
+99022,3564,Medical Lake,Spokane County,9012
+99023,288,Mica,Spokane County,964
+99025,2328,Newman Lake,Spokane County,5668
+99026,3623,Nine Mile Falls,Spokane County,8828
+99027,2734,Otis Orchards,Spokane County,5973
+99029,653,Reardan,Lincoln County,1747
+99030,337,Rockford,Spokane County,592
+99031,510,Spangle,Spokane County,1110
+99032,443,Sprague,Lincoln County,982
+99033,433,Tekoa,Whitman County,790
+99034,142,Tumtum,Stevens County,215
+99036,696,Valleyford,Spokane County,1546
+99037,6189,Veradale,Spokane County,15464
+99039,61,Waverly,Spokane County,171
+99040,289,Wellpinit,Stevens County,643
+99101,765,Addy,Stevens County,1635
+99102,242,Albion,Whitman County,509
+99103,254,Almira,Lincoln County,603
+99105,19,Benge,Adams County,31
+99109,2610,Chewelah,Stevens County,4894
+99110,680,Clayton,Stevens County,1465
+99111,1920,Colfax,Whitman County,4012
+99113,273,Colton,Whitman County,555
+99114,6154,Colville,Stevens County,12948
+99115,974,Coulee City,Douglas County,1224
+99116,823,Coulee Dam,Okanogan County,1538
+99117,288,Creston,Lincoln County,568
+99118,510,Curlew,Ferry County,997
+99119,1319,Cusick,Pend Oreille County,1514
+99121,140,Danville,Ferry County,332
+99122,2262,Davenport,Lincoln County,4037
+99123,560,Electric City,Grant County,852
+99124,137,Elmer City,Okanogan County,270
+99125,311,Endicott,Whitman County,626
+99126,284,Evans,Stevens County,952
+99128,149,Farmington,Whitman County,289
+99129,405,Fruitland,Stevens County,690
+99130,335,Garfield,Whitman County,833
+99131,138,Gifford,Stevens County,122
+99133,847,Grand Coulee,Douglas County,1377
+99134,296,Harrington,Lincoln County,572
+99135,211,Hartline,Grant County,452
+99136,21,Hay,Whitman County,17
+99137,219,Hunters,Stevens County,399
+99138,654,Inchelium,Ferry County,1103
+99139,607,Ione,Pend Oreille County,800
+99140,278,Keller,Ferry County,568
+99141,3015,Kettle Falls,Ferry County,6160
+99143,346,Lacrosse,Whitman County,691
+99144,6,Lamona,Lincoln County,19
+99146,43,Laurier,Ferry County,59
+99147,144,Lincoln,Lincoln County,152
+99148,2099,Loon Lake,Stevens County,2358
+99149,56,Malden,Whitman County,194
+99150,141,Malo,Ferry County,281
+99151,90,Marcus,Stevens County,182
+99152,86,Metaline,Pend Oreille County,144
+99153,365,Metaline Falls,Pend Oreille County,432
+99154,8,Mohler,Lincoln County,38
+99155,431,Nespelem,Okanogan County,977
+99156,4981,Newport,Pend Oreille County,9132
+99157,431,Northport,Stevens County,655
+99158,239,Oakesdale,Whitman County,619
+99159,664,Odessa,Lincoln County,1186
+99160,53,Orient,Ferry County,47
+99161,651,Palouse,Whitman County,1366
+99163,14888,Pullman,Whitman County,33829
+99166,1682,Republic,Ferry County,2936
+99167,496,Rice,Stevens County,720
+99169,1206,Ritzville,Adams County,2494
+99170,475,Rosalia,Whitman County,955
+99171,488,Saint John,Whitman County,969
+99173,747,Springdale,Stevens County,1898
+99174,38,Steptoe,Whitman County,32
+99176,101,Thornton,Whitman County,136
+99179,220,Uniontown,Whitman County,568
+99180,380,Usk,Pend Oreille County,741
+99181,1110,Valley,Stevens County,1928
+99185,790,Wilbur,Lincoln County,1385
+99201,8842,Spokane,Spokane County,14246
+99202,8296,Spokane,Spokane County,20829
+99203,9742,Spokane,Spokane County,21984
+99204,4357,Spokane,Spokane County,7189
+99205,18791,Spokane,Spokane County,44216
+99206,17339,Spokane,Spokane County,42850
+99207,13673,Spokane,Spokane County,32219
+99208,24273,Spokane,Spokane County,58172
+99212,9496,Spokane,Spokane County,21013
+99216,12703,Spokane,Spokane County,27302
+99217,8166,Spokane,Spokane County,19533
+99218,6464,Spokane,Spokane County,16305
+99223,15252,Spokane,Spokane County,34868
+99224,10559,Spokane,Spokane County,24455
+99251,0,Spokane,Spokane County,1056
+99258,4,Spokane,Spokane County,502
+99301,27700,Pasco,Franklin County,85210
+99320,3781,Benton City,Benton County,10023
+99321,213,Beverly,Grant County,851
+99322,250,Bickleton,Klickitat County,406
+99323,1409,Burbank,Walla Walla County,4219
+99324,3601,College Place,Walla Walla County,10076
+99326,1413,Connell,Franklin County,5900
+99328,1967,Dayton,Columbia County,3669
+99329,61,Dixie,Walla Walla County,156
+99330,266,Eltopia,Franklin County,876
+99333,30,Hooper,Whitman County,91
+99335,98,Kahlotus,Franklin County,171
+99336,20915,Kennewick,Benton County,51329
+99337,11725,Kennewick,Benton County,32581
+99338,6909,Kennewick,Benton County,18312
+99341,332,Lind,Adams County,736
+99343,778,Mesa,Franklin County,3522
+99344,5936,Othello,Adams County,19630
+99345,73,Paterson,Benton County,164
+99346,88,Plymouth,Benton County,372
+99347,1325,Pomeroy,Garfield County,2429
+99348,721,Prescott,Walla Walla County,1590
+99349,2754,Mattawa,Grant County,7531
+99350,4954,Prosser,Benton County,14287
+99352,15522,Richland,Benton County,35618
+99353,6592,West Richland,Benton County,18264
+99354,10807,Richland,Benton County,25676
+99356,108,Roosevelt,Klickitat County,331
+99357,1123,Royal City,Grant County,3973
+99359,80,Starbuck,Columbia County,100
+99360,507,Touchet,Walla Walla County,1400
+99361,908,Waitsburg,Walla Walla County,1668
+99362,18022,Walla Walla,Walla Walla County,43028
+99363,66,Wallula,Walla Walla County,96
+99371,254,Washtucna,Adams County,309
+99401,150,Anatone,Asotin County,383
+99402,843,Asotin,Asotin County,1594
+99403,9192,Clarkston,Asotin County,20425
