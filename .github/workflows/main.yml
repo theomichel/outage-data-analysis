@@ -54,6 +54,9 @@ jobs:
           pip install pytz
           pip install requests
 
+      - name: Print Working Directory
+        run: pwd
+
       - name: Run pse notifier
         run: |
           echo "Running PSE notifier"
