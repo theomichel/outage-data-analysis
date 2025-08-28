@@ -30,18 +30,6 @@ jobs:
           repository: davemattson/pse-outage
           path: pse-outage
           
-      - name: Checkout the scl repository
-        uses: actions/checkout@v4
-        with:
-          repository: davemattson/scl-outage
-          path: scl-outage
-          
-      - name: Checkout the snopud repository
-        uses: actions/checkout@v4
-        with:
-          repository: davemattson/snopud-outage
-          path: snopud-outage
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
