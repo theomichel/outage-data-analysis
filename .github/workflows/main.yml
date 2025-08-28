@@ -10,6 +10,11 @@ jobs:
   scheduled:
     runs-on: ubuntu-latest
     steps:
+      - shell: bash
+        env:
+          PWRONDATABOT_TOKEN: ${{ secrets.PWRONDATABOT_TOKEN }}
+        working-directory: .
+    
       - name: Checkout current repository
         uses: actions/checkout@v4
         with:
