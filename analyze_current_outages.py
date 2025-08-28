@@ -6,23 +6,25 @@ import math
 import requests
 import os
 
-def calculate_expected_length_minutes(start_time, est_restoration_time):
+def calculate_expected_length_minutes(update_time, est_restoration_time):
     """
     Calculate the expected length of an outage in minutes.
-    Returns the difference between estimated restoration time and start time.
+    Returns the difference between estimated restoration time and most recent update time.
     """
+
+    print(f"calculate_expected_length_minutes: update_time: {update_time}, est_restoration_time: {est_restoration_time}")
     try:
-        if pd.isna(start_time) or pd.isna(est_restoration_time):
+        if pd.isna(update_time) or pd.isna(est_restoration_time):
             return None
         
         # Convert to datetime if they're strings
-        if isinstance(start_time, str):
-            start_time = pd.to_datetime(start_time)
+        if isinstance(update_time, str):
+            update_time = pd.to_datetime(update_time)
         if isinstance(est_restoration_time, str):
             est_restoration_time = pd.to_datetime(est_restoration_time)
         
         # Calculate difference in minutes
-        time_diff = est_restoration_time - start_time
+        time_diff = est_restoration_time - update_time
         return int(time_diff.total_seconds() / 60)
     except Exception as e:
         print(f"Error calculating expected length: {e.message}")
@@ -171,7 +173,7 @@ def send_telegram_message(token, chat_id, message, thread_id=None):
         print(f"Error sending Telegram message: {e}")
         return False
 
-def send_notification(notification_data, file_input, thresholds, bot_token=None, chat_id=None, thread_id=None, geocode_api_key=None):
+def send_notification(notification_data, file_input, thresholds, bot_token=None, chat_id=None, thread_id=None, geocode_api_key=None, notification_output_dir="."):
     """
     Send Telegram notification about outages that meet the threshold criteria.
     notification_data contains: new_outages, resolved_outages, new_customers, resolved_customers
@@ -243,9 +245,10 @@ def send_notification(notification_data, file_input, thresholds, bot_token=None,
             # Save notification to timestamped file with outage ID
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             notification_filename = f"notification_{msg_type}_{outage_id}_{timestamp}.txt"
-            with open(notification_filename, 'w', encoding="utf-8") as f:
+            notification_path = os.path.join(notification_output_dir, notification_filename)
+            with open(notification_path, 'w', encoding="utf-8") as f:
                 f.write(message)
-            print(f"{msg_type.capitalize()} outage notification for {outage_id} saved to: {notification_filename}")
+            print(f"{msg_type.capitalize()} outage notification for {outage_id} saved to: {notification_path}")
         
         if not messages_to_send:
             print("No outages meeting criteria - no notification sent.")
@@ -273,6 +276,8 @@ def main():
                        help='Telegram thread ID for notifications (optional)')
     parser.add_argument('--geocode-api-key', type=str,
                        help='API key for geocoding service (optional)')
+    parser.add_argument('--notification-output-dir', type=str, default=".",
+                       help='Directory to save notification files (default: current directory)')
     args = parser.parse_args()
     
     print(f"====== analyze_current_outages.py starting for utility {args.utility} =======")
@@ -396,10 +401,10 @@ def main():
     resolved_outages = pd.DataFrame()
     if not previous_outages_df.empty:
         # Filter previous outages that would have met our alert thresholds
+        print(f"previous_outages_df:\n{previous_outages_df.to_string()}")
         significant_previous = previous_outages_df[
-            (previous_outages_df['expected_length_minutes_previous'] > expected_length_threshold_minutes) &
             (previous_outages_df['customers_impacted'] > args.customer_threshold) &
-            (previous_outages_df['elapsed_time_minutes_previous'] > elapsed_time_threshold_minutes)
+            (previous_outages_df['elapsed_time_minutes_previous'] > expected_length_threshold_minutes)
         ]
         
         # Find significant outages that were in previous snapshot but not in latest
@@ -455,7 +460,7 @@ def main():
             'new_outages': new_outages,
             'resolved_outages': resolved_outages
         }
-        send_notification(notification_data, args.file_input, thresholds, args.telegram_token, args.telegram_chat_id, args.telegram_thread_id, args.geocode_api_key)
+        send_notification(notification_data, args.file_input, thresholds, args.telegram_token, args.telegram_chat_id, args.telegram_thread_id, args.geocode_api_key, args.notification_output_dir)
 
     print(f"====== analyze_current_outages.py completed =======")
 

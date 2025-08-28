@@ -361,7 +361,81 @@ def parse_snopud_file(input_file, rows, file_datetime, is_from_most_recent=True)
             "isFromMostRecent": is_from_most_recent
         }
         rows.append(row_data)
+
+def parse_pge_file(input_file, rows, file_datetime, is_from_most_recent=True):
+    """Parse PG&E outage data from JSON files.
     
+    PG&E data contains point coordinates rather than polygons, so we create a small
+    circular polygon around each point for consistency with other utilities.
+    """
+    try:
+        data = json.load(input_file)
+    except Exception as e:
+        print(f"error parsing pge file: {input_file}. Defaulting to empty list. Exception: {e}")
+        data = []
+
+    for outage in data:
+        outage_id = outage.get("F_OUTAGE_ID")
+        start_time_ms = outage.get("OUTAGE_START")
+        customers_impacted = outage.get("EST_CUSTOMERS", 0)
+        status = outage.get("CREW_CURRENT_STATUS")
+        cause = outage.get("OUTAGE_CAUSE")
+        est_restoration_time_ms = outage.get("CURRENT_ETOR")
+        lat = outage.get("OUTAGE_LATITUDE")
+        lon = outage.get("OUTAGE_LONGITUDE")
+
+        # Skip outages with missing essential data
+        # TODO: add log levels and logging that's saved to the end
+        if not outage_id or not start_time_ms or lat is None or lon is None:
+            print(f"ALERT: skipping outage {outage_id} because it is missing essential data")
+            continue
+
+        # Convert epoch milliseconds to datetime
+        # TODO: I believe this is in PST, so we need to convert to UTC, but need to check before making changes
+        start_time = datetime.fromtimestamp(start_time_ms / 1000)
+        est_restoration_time = None
+        if est_restoration_time_ms:
+            est_restoration_time = datetime.fromtimestamp(est_restoration_time_ms / 1000)
+
+        # Create a small circular polygon around the point coordinates
+        # Use a radius of approximately 0.001 degrees (roughly 100 meters)
+        # TODO: do we really need this? Or just have polygon-less outages?
+        radius_degrees = 0.001
+        num_points = 8  # Create an 8-sided polygon
+        
+        polygon_points = []
+        for i in range(num_points):
+            angle = 2 * math.pi * i / num_points
+            delta_lon = radius_degrees * math.cos(angle)
+            delta_lat = radius_degrees * math.sin(angle)
+            polygon_points.append([lon + delta_lon, lat + delta_lat])
+        
+        # Close the polygon by adding the first point again
+        polygon_points.append(polygon_points[0])
+        
+        polygons = [polygon_points]
+        center_lon = lon
+        center_lat = lat
+        radius = .05 # a twentieth of a mile, very roughly the same 100 meters as our fake polygon
+
+        row = {
+            "utility": "pge",
+            "outage_id": outage_id,
+            "file_datetime": file_datetime.strftime(OUTPUT_TIME_FORMAT),
+            "start_time": local_timezone.localize(start_time).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
+            "customers_impacted": customers_impacted,
+            "status": status,
+            "cause": cause,
+            "est_restoration_time": "none" if est_restoration_time is None else local_timezone.localize(est_restoration_time).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
+            "polygon_json": json.dumps(polygons),
+            "center_lon": center_lon,
+            "center_lat": center_lat,
+            "radius": radius,
+            "isFromMostRecent": is_from_most_recent
+        }
+        rows.append(row)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Collect PSE outage updates from JSON files into a CSV. Can also be run on a single file. Assumes that input file names start with the date that the file was created, in %Y-%m-%dT%H%M%S%f form.")
     parser.add_argument('-d', '--directory', type=str, default='.', help='Directory containing files that match the pattern')
@@ -386,6 +460,8 @@ def main():
         filename_suffix = "-scl-events.json"
     elif (args.utility == "snopud"):
         filename_suffix = "-KMLOutageAreas.xml"
+    elif (args.utility == "pge"):
+        filename_suffix = "-outages.json"
 
     # pattern used to find all the files
     if (args.singlefile):
@@ -433,6 +509,8 @@ def main():
                 parse_scl_file(f, rows, gmt_file_datetime, is_from_most_recent)
             elif (args.utility == "snopud"):
                 parse_snopud_file(f, rows, gmt_file_datetime, is_from_most_recent)
+            elif (args.utility == "pge"):
+                parse_pge_file(f, rows, gmt_file_datetime, is_from_most_recent)
             else:
                 print("no utility specified, will not parse")
 

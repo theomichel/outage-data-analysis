@@ -23,7 +23,11 @@ from branca.colormap import LinearColormap
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Configuration for impact rate visualization
-IMPACT_RATE_CAP = 100.0  # Cap impact rates at this percentage for visualization
+IMPACT_RATE_CAP = 100.0  # Maximum limit for impact rate cap (calculated cap will not exceed this value)
+
+# Default file paths
+DEFAULT_ZIP_GEO_FILE = os.path.join(os.path.dirname(__file__), 'constant_data', 'wa_washington_zip_codes_geo.min.json')
+DEFAULT_ZIP_POPULATION_FILE = os.path.join(os.path.dirname(__file__), 'constant_data', 'washington_zip_populations.csv')
 
 def has_changes(series):
     return series.nunique() > 1
@@ -68,18 +72,52 @@ def last_valid(s: pd.Series):
     return s.loc[idx] if idx is not None else pd.NaT
 
 # Global variables to store the zip code GeoDataFrame and population data for caching
-_wa_zip_gdf = None
+_zip_geo_df = None
 _wa_population_df = None
 
-def load_wa_zip_codes():
+def calculate_impact_rate_cap(impact_rates, max_limit=IMPACT_RATE_CAP):
+    """
+    Calculate an appropriate impact rate cap based on the observed data.
+    
+    Args:
+        impact_rates: Series or array of impact rates
+        max_limit: Maximum allowed cap value (default: IMPACT_RATE_CAP)
+    
+    Returns:
+        float: Calculated cap value, not exceeding max_limit
+    """
+    cap_percentile = 0.99
+    if len(impact_rates) == 0:
+        return max_limit
+    
+    # Remove NaN values
+    valid_rates = impact_rates.dropna()
+    if len(valid_rates) == 0:
+        return max_limit
+    
+    # Calculate the cap based on the 95th percentile of the data
+    # This provides a good balance between showing the full range and handling outliers
+    calculated_cap = valid_rates.quantile(cap_percentile)
+    
+    # Ensure the calculated cap doesn't exceed the maximum limit, and round to the nearest integer
+    final_cap = int(min(calculated_cap, max_limit))
+    
+    return final_cap
+
+def load_zip_codes(zip_file_path=None):
     """
     Load Washington zip code boundaries from GeoJSON file.
     Returns a GeoDataFrame with zip code polygons.
-    """
-    global _wa_zip_gdf
     
-    if _wa_zip_gdf is None:
-        zip_file_path = os.path.join(os.path.dirname(__file__), 'constant_data', 'wa_washington_zip_codes_geo.min.json')
+    Args:
+        zip_file_path (str, optional): Path to the zip code GeoJSON file.
+                                      If None, uses default path.
+    """
+    global _zip_geo_df
+    
+    if _zip_geo_df is None:
+        if zip_file_path is None:
+            zip_file_path = DEFAULT_ZIP_GEO_FILE
         
         if not os.path.exists(zip_file_path):
             print(f"Warning: Zip code file not found at {zip_file_path}")
@@ -87,31 +125,36 @@ def load_wa_zip_codes():
             
         try:
             print("Loading Washington zip code boundaries...")
-            _wa_zip_gdf = gpd.read_file(zip_file_path)
-            print(f"Loaded {len(_wa_zip_gdf)} zip code boundaries")
-            return _wa_zip_gdf
+            _zip_geo_df = gpd.read_file(zip_file_path)
+            print(f"Loaded {len(_zip_geo_df)} zip code boundaries")
+            return _zip_geo_df
         except Exception as e:
             print(f"Error loading zip code file: {e}")
             return None
     
-    return _wa_zip_gdf
+    return _zip_geo_df
 
-def load_wa_population_data():
+def load_wa_population_data(pop_file_path=None):
     """
     Load Washington zip code household count data from CSV file.
     Returns a DataFrame with zip code and household count information.
+    
+    Args:
+        pop_file_path (str, optional): Path to the population CSV file.
+                                      If None, uses default path.
     """
     global _wa_population_df
     
     if _wa_population_df is None:
-        pop_file_path = os.path.join(os.path.dirname(__file__), 'constant_data', 'washington_zip_populations.csv')
+        if pop_file_path is None:
+            pop_file_path = DEFAULT_ZIP_POPULATION_FILE
         
-    if not os.path.exists(pop_file_path):
-        print(f"Warning: Population file not found at {pop_file_path}")
-        return None
+        if not os.path.exists(pop_file_path):
+            print(f"Warning: Population file not found at {pop_file_path}")
+            return None
 
-    print("Loading Washington zip code household count data...")
-    _wa_population_df = pd.read_csv(pop_file_path)
+        print("Loading Washington zip code household count data...")
+        _wa_population_df = pd.read_csv(pop_file_path)
     
     # Clean household count data - convert to numeric, handling both string and numeric inputs
     if _wa_population_df['Household Count'].dtype == 'object':
@@ -143,8 +186,8 @@ def get_zip_code(lon, lat):
         return None
     
     # Load zip code boundaries
-    wa_zips = load_wa_zip_codes()
-    if wa_zips is None:
+    zip_geo_df = load_zip_codes()
+    if zip_geo_df is None:
         return None
     
     try:
@@ -160,7 +203,7 @@ def get_zip_code(lon, lat):
         # Perform spatial join to find which zip code contains the point
         result = gpd.sjoin(
             point_gdf, 
-            wa_zips, 
+            zip_geo_df, 
             how='left', 
             predicate='within'
         )
@@ -558,15 +601,17 @@ def filter_to_high_impact_outages(summary, start_date_utc=datetime.min.replace(t
     print(f"Number of outages in the given date range: {num_outages}")
     print(f"Number of outages with at least {min_customers_impacted} customers impacted: {len(summary[summary['max_customers_impacted'] >= min_customers_impacted])}")
     print(f"Number of outages with at least {min_estimated_remaining_outage_length} hours of predicted outage length: {len(summary[summary['largest_estimated_remaining_outage_length'] >= min_estimated_remaining_outage_length])}")
+    print(f"Number of outages with at least {min_actual_outage_length}  length: {len(summary[summary['total_outage_length'] >= min_actual_outage_length])}")
     
+
     # Count outages that meet both thresholds
-    both_thresholds = summary[
+    meeting_all_thresholds_df = summary[
         (summary['max_customers_impacted'] >= min_customers_impacted) & 
         (summary['largest_estimated_remaining_outage_length'] >= min_estimated_remaining_outage_length) &
         (summary['total_outage_length'] >= min_actual_outage_length)
     ]
-    print(f"Number of outages meeting both thresholds: {len(both_thresholds)}")
-    return both_thresholds
+    print(f"Number of outages meeting all thresholds: {len(meeting_all_thresholds_df)}")
+    return meeting_all_thresholds_df
 
 def create_impact_heatmaps(impact_df, population_data, png_filename='puget_sound_impact_heatmap.png', html_filename='puget_sound_impact_heatmap.html'):
     """
@@ -583,8 +628,8 @@ def create_impact_heatmaps(impact_df, population_data, png_filename='puget_sound
         return
     
     # Load zip code boundaries
-    wa_zips = load_wa_zip_codes()
-    if wa_zips is None:
+    zip_geo_df = load_zip_codes()
+    if zip_geo_df is None:
         print("Could not load zip code boundaries for heatmap")
         return
     
@@ -601,11 +646,11 @@ def create_impact_heatmaps(impact_df, population_data, png_filename='puget_sound
         return
     
     # Merge impact data with zip code boundaries
-    wa_zips['ZCTA5CE10_str'] = wa_zips['ZCTA5CE10'].astype(str)
-    wa_zips['impact_rate'] = wa_zips['ZCTA5CE10_str'].map(zip_impact_map)
+    zip_geo_df['ZCTA5CE10_str'] = zip_geo_df['ZCTA5CE10'].astype(str)
+    zip_geo_df['impact_rate'] = zip_geo_df['ZCTA5CE10_str'].map(zip_impact_map)
     
     # Filter to only show zip codes with impact data
-    impacted_zips = wa_zips[wa_zips['impact_rate'].notna()].copy()
+    impacted_zips = zip_geo_df[zip_geo_df['impact_rate'].notna()].copy()
     
     if len(impacted_zips) == 0:
         print("No zip codes with impact data found in boundary file")
@@ -653,9 +698,9 @@ def create_puget_sound_heatmap(impacted_zips, filename='puget_sound_impact_heatm
         print("Using basic grid instead")
     
     # Load all Washington zip codes for background
-    wa_zips = load_wa_zip_codes()
-    if wa_zips is not None:
-        wa_zips.plot(ax=ax, color='lightgray', edgecolor='black', linewidth=0.5, alpha=0.3)
+    zip_geo_dataframe = load_zip_codes()
+    if zip_geo_dataframe is not None:
+        zip_geo_dataframe.plot(ax=ax, color='lightgray', edgecolor='black', linewidth=0.5, alpha=0.3)
     
     # Filter impacted zip codes to only those in the displayed area for local color scaling
     if len(impacted_zips) > 0:
@@ -680,6 +725,10 @@ def create_puget_sound_heatmap(impacted_zips, filename='puget_sound_impact_heatm
         (impacted_zips.geometry.bounds.maxy <= display_bounds[3])
     ].copy()
     
+    # Calculate impact rate cap based on the data
+    calculated_cap = calculate_impact_rate_cap(impacted_zips['impact_rate'])
+    print(f"Calculated impact rate cap: {calculated_cap:.2f}% (max limit: {IMPACT_RATE_CAP}%)")
+    
     # Use local min/max for color scaling if we have data in the area
     if len(displayed_zips) > 0:
         local_min = displayed_zips['impact_rate'].min()
@@ -692,12 +741,12 @@ def create_puget_sound_heatmap(impacted_zips, filename='puget_sound_impact_heatm
                 column='impact_rate', 
                 cmap='Reds', 
                 legend=True,
-                                 legend_kwds={'label': 'Impact Rate (sum of impacted customers across all outages / total customers in the zip, as a %) - Linear Scale', 'shrink': 0.8, 'format': lambda x, pos: f'{x:.0f}+' if x == min(local_max, IMPACT_RATE_CAP) else f'{x:.0f}'},
+                                 legend_kwds={'label': 'Impact Rate (sum of impacted customers across all outages / total customers in the zip, as a %) - Linear Scale', 'shrink': 0.8, 'format': lambda x, pos: f'{x:.0f}+' if x == min(local_max, calculated_cap) else f'{x:.0f}'},
                 edgecolor='black', 
                 linewidth=0.2,  # Make borders thinner
                 missing_kwds={'color': 'lightgray'},
                 vmin=local_min,
-                vmax=min(local_max, IMPACT_RATE_CAP),
+                vmax=min(local_max, calculated_cap),
                 alpha=0.3,  # Reduce opacity to 30% so background shows through more
                                  # Linear scale - no norm parameter needed
             )
@@ -711,12 +760,12 @@ def create_puget_sound_heatmap(impacted_zips, filename='puget_sound_impact_heatm
                  column='impact_rate', 
                  cmap='Reds', 
                  legend=True,
-                 legend_kwds={'label': 'Impact Rate (sum of impacted customers across all outages / total customers in the zip, as a %) - Linear Scale', 'shrink': 0.8, 'format': lambda x, pos: f'{x:.0f}+' if x == min(impacted_zips['impact_rate'].max(), IMPACT_RATE_CAP) else f'{x:.0f}'},
+                 legend_kwds={'label': 'Impact Rate (sum of impacted customers across all outages / total customers in the zip, as a %) - Linear Scale', 'shrink': 0.8, 'format': lambda x, pos: f'{x:.0f}+' if x == min(impacted_zips['impact_rate'].max(), calculated_cap) else f'{x:.0f}'},
                 edgecolor='black', 
                 linewidth=0.2,  # Make borders thinner
                 missing_kwds={'color': 'lightgray'},
                 vmin=impacted_zips['impact_rate'].min(),
-                vmax=min(impacted_zips['impact_rate'].max(), IMPACT_RATE_CAP),
+                vmax=min(impacted_zips['impact_rate'].max(), calculated_cap),
                 alpha=0.3,  # Reduce opacity to 30% so background shows through more
                                  # Linear scale - no norm parameter needed
             )
@@ -755,9 +804,12 @@ def create_interactive_html_map(impacted_zips, impact_df, population_data, filen
         tiles='CartoDB voyager'
     )
     
+    # Calculate impact rate cap based on the data
+    calculated_cap = calculate_impact_rate_cap(impacted_zips['impact_rate'])
+    
     # Create a color map for the impact rates
     min_rate = impacted_zips['impact_rate'].min()
-    max_rate = min(impacted_zips['impact_rate'].max(), IMPACT_RATE_CAP)  # Cap impact rates for visualization
+    max_rate = min(impacted_zips['impact_rate'].max(), calculated_cap)  # Cap impact rates for visualization
     
      # Create linear color mapping for impact rate visualization
      
@@ -765,7 +817,7 @@ def create_interactive_html_map(impacted_zips, impact_df, population_data, filen
            colors=['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'],
            vmin=min_rate,
            vmax=max_rate,
-                       caption='Impact Rate (sum of impacted customers across all outages / total customers in the zip, as a %, capped at ' + str(int(IMPACT_RATE_CAP)) + '%)'
+                       caption='Impact Rate (sum of impacted customers across all outages / total customers in the zip, as a %, capped at ' + str(int(calculated_cap)) + '%)'
        )
     
                    # Add the color map to the map
@@ -826,7 +878,7 @@ def create_interactive_html_map(impacted_zips, impact_df, population_data, filen
         
         if pd.notna(impact_rate):
             # Use linear color mapping for impact rate visualization
-            capped_rate = min(impact_rate, IMPACT_RATE_CAP)  # Apply cap
+            capped_rate = min(impact_rate, calculated_cap)  # Apply cap
             color = colormap.rgb_hex_str(capped_rate)
             
             # Get data for popup
@@ -891,7 +943,7 @@ def analyze_outage_impacts_by_area(summary):
     # TODO: implement
     pass
 
-def create_zip_code_impact_analysis(outages_df, population_data=None, png_filename='puget_sound_impact_heatmap.png', html_filename='puget_sound_impact_heatmap.html'):
+def create_zip_code_impact_analysis(outages_df, population_data=None, png_filename='puget_sound_impact_heatmap.png', html_filename='puget_sound_impact_heatmap.html', zip_geo_file=None):
     """
     Create zip code impact analysis and visualizations for a given outages DataFrame.
     
@@ -900,6 +952,7 @@ def create_zip_code_impact_analysis(outages_df, population_data=None, png_filena
         population_data: Optional DataFrame with population data for normalization
         png_filename: Filename for the static PNG heatmap (default: 'puget_sound_impact_heatmap.png')
         html_filename: Filename for the interactive HTML map (default: 'puget_sound_impact_heatmap.html')
+        zip_geo_file: Optional path to zip code boundaries GeoJSON file
     
     Returns:
         impact_df: DataFrame with zip code impact analysis
@@ -924,10 +977,10 @@ def create_zip_code_impact_analysis(outages_df, population_data=None, png_filena
         points_gdf = gpd.GeoDataFrame(valid_coords, crs='EPSG:4326')
         
         # Load zip code boundaries
-        wa_zips = load_wa_zip_codes()
-        if wa_zips is not None:
+        zip_geo_df = load_zip_codes(zip_geo_file)
+        if zip_geo_df is not None:
             # Perform bulk spatial join
-            result = gpd.sjoin(points_gdf, wa_zips, how='left', predicate='within')
+            result = gpd.sjoin(points_gdf, zip_geo_df, how='left', predicate='within')
             
             # Create mapping from index to zip code
             zip_mapping = result.set_index(result.index)['ZCTA5CE10'].astype(str)
@@ -1031,6 +1084,10 @@ def main():
                        help='Filename for the static PNG heatmap (default: puget_sound_impact_heatmap.png)')
     parser.add_argument('--html-heatmap', default='puget_sound_impact_heatmap.html',
                        help='Filename for the interactive HTML heatmap (default: puget_sound_impact_heatmap.html)')
+    parser.add_argument('-zg', '--zip-geo-file', default=DEFAULT_ZIP_GEO_FILE,
+                       help='Path to zip code boundaries GeoJSON file (default: constant_data/wa_washington_zip_codes_geo.min.json)')
+    parser.add_argument('-zp', '--zip-population-file', default=DEFAULT_ZIP_POPULATION_FILE,
+                       help='Path to zip code population data CSV file (default: constant_data/washington_zip_populations.csv)')
     args = parser.parse_args()
     
     # Read and combine multiple files
@@ -1168,12 +1225,12 @@ def main():
     both_thresholds = filter_to_high_impact_outages(summary, end_date_utc=datetime.now(timezone.utc), min_customers_impacted=1, min_estimated_remaining_outage_length=timedelta(hours=0), min_actual_outage_length=timedelta(hours=4))
 
     # Load population data for normalization
-    population_data = load_wa_population_data()
+    population_data = load_wa_population_data(args.zip_population_file)
     print(f"population_data: {population_data}")
     
     # Create zip code impact analysis and visualizations for the filtered outages
     if len(both_thresholds) > 0:
-        create_zip_code_impact_analysis(both_thresholds, population_data, args.png_heatmap, args.html_heatmap)
+        create_zip_code_impact_analysis(both_thresholds, population_data, args.png_heatmap, args.html_heatmap, args.zip_geo_file)
 
 
      # if len(both_thresholds) > 0:
