@@ -21,7 +21,7 @@ jobs:
       - name: Checkout current repository
         uses: actions/checkout@v4
         with:
-          path: current-repo
+          path: outage-data-analysis
 
       - name: Checkout the pse repository
         uses: actions/checkout@v4
