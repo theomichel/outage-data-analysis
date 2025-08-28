@@ -23,6 +23,7 @@ def versions(path, count, branch='origin/main', repo=None):
     file diff information to show a timeseries of file changes.
     """
 
+    print(f"versions: path: {path}, count: {count}, branch: {branch}, repo: {repo}")
 
     # Iterate through the first N commits for the given branch in the repository
     # all indications are that they are in reverse chronological order by default
@@ -32,6 +33,7 @@ def versions(path, count, branch='origin/main', repo=None):
         # If no parent, this is the first commit, so use empty tree.
         # Then create a mapping of path to diff for each file changed.
         parent = commit.parents[0] if commit.parents else EMPTY_TREE_SHA
+        print(f"version: commit: {commit}, parent: {parent}")
         diffs  = {
             diff.a_path: diff for diff in commit.diff(parent)
         }
