@@ -6,15 +6,18 @@ on:
   schedule:
     - cron:  '*/5 * * * *'
 
+env:
+  PWRONDATABOT_TOKEN: ${{ secrets.PWRONDATABOT_TOKEN }}
+
 jobs:
   scheduled:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./scripts
+       
     steps:
-      - shell: bash
-        env:
-          PWRONDATABOT_TOKEN: ${{ secrets.PWRONDATABOT_TOKEN }}
-        working-directory: .
-    
       - name: Checkout current repository
         uses: actions/checkout@v4
         with:
