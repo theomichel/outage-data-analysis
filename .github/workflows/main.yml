@@ -1,0 +1,41 @@
+name: Scrape latest outage data
+
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron:  '*/5 * * * *'
+
+jobs:
+  scheduled:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: current-repo
+
+      - name: Checkout the pse repository
+        uses: actions/checkout@v4
+        with:
+          repository: davemattson/pse-outage
+          path: pse-outage
+          
+      - name: Checkout the scl repository
+        uses: actions/checkout@v4
+        with:
+          repository: davemattson/scl-outage
+          path: scl-outage
+          
+      - name: Checkout the snopud repository
+        uses: actions/checkout@v4
+        with:
+          repository: davemattson/snopud-outage
+          path: snopud-outage
+
+      - name: Run pse notifier
+        run: |
+          echo "Running PSE notifier"
+          py expand.py -r pse-outage -i -o output_files -l 2 pse-outage\pse-events.json
+          py create_outages_dataframe.py -l -d pse-outage/output_files -u pse -o output_files/pse_outages_dataframe.csv
+          py analyze_current_outages.py -f output_files/pse_outages_dataframe.csv -l .5 -c 1 -e .1 -u pse --telegram-token "8043315721:AAGJM50tzg3cQbtF_FXg5fyxIK8hHP99r3U" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "689c04ea91cf4154626975qcz13eb93"
