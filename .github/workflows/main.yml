@@ -53,6 +53,7 @@ jobs:
           pip install pandas
           pip install pytz
           pip install requests
+          pip install git
 
       - name: Print Working Directory
         run: pwd
