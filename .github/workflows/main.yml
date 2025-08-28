@@ -38,4 +38,4 @@ jobs:
           echo "Running PSE notifier"
           py expand.py -r pse-outage -i -o output_files -l 2 pse-outage\pse-events.json
           py create_outages_dataframe.py -l -d pse-outage/output_files -u pse -o output_files/pse_outages_dataframe.csv
-          py analyze_current_outages.py -f output_files/pse_outages_dataframe.csv -l .5 -c 1 -e .1 -u pse --telegram-token "8043315721:AAGJM50tzg3cQbtF_FXg5fyxIK8hHP99r3U" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "689c04ea91cf4154626975qcz13eb93"
+          py analyze_current_outages.py -f output_files/pse_outages_dataframe.csv -l .5 -c 1 -e .1 -u pse --telegram-token "<token>" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "689c04ea91cf4154626975qcz13eb93"
