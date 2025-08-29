@@ -58,4 +58,5 @@ jobs:
           git status
           git pull
           ls
+          git log
           git diff-tree edee40e8dac8fed07502d9e9047c2c7de1f34bd8 46f0cd7d9288c6b623953411cc58f0986e459f31 -r --abbrev=40 --full-index -M --raw -z --no-color
