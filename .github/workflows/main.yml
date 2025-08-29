@@ -1,4 +1,4 @@
-name: Scrape latest outage data
+name: Send notifications for new/resolved outages
 
 on:
   push:
@@ -11,7 +11,7 @@ env:
   GEOCODE_API_KEY: ${{ secrets.GEOCODE_API_KEY }}
 
 jobs:
-  scheduled:
+  outage_watcher:
     runs-on: ubuntu-latest
     defaults:
       run:
