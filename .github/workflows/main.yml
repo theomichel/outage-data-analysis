@@ -81,7 +81,7 @@ jobs:
         continue-on-error: true
         run: |
           python -u create_outages_dataframe.py -l -d output_files -u pse -o output_files/pse_outages_dataframe.csv
-          python -u analyze_current_outages.py -f output_files/pse_outages_dataframe.csv -l .5 -c 1 -e .1 -u pse --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
+          python -u analyze_current_outages.py -f output_files/pse_outages_dataframe.csv -l .25 -c 100 -e 4 -u pse --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1002452542176" --telegram-thread-id "4789" --geocode-api-key "${GEOCODE_API_KEY}"
 
       - name: Run scl expand
         continue-on-error: true
@@ -101,7 +101,7 @@ jobs:
         continue-on-error: true
         run: |
           python -u create_outages_dataframe.py -l -d output_files -u scl -o output_files/scl_outages_dataframe.csv
-          python -u analyze_current_outages.py -f output_files/scl_outages_dataframe.csv -l .5 -c 1 -e .1 -u scl --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
+          python -u analyze_current_outages.py -f output_files/scl_outages_dataframe.csv -l .25 -c 100 -e 4 -u scl --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1002452542176" --telegram-thread-id "4789" --geocode-api-key "${GEOCODE_API_KEY}"
                 
       - name: Run snopud expand
         continue-on-error: true
@@ -121,5 +121,5 @@ jobs:
         continue-on-error: true
         run: |
           python -u create_outages_dataframe.py -l -d output_files -u snopud -o output_files/snopud_outages_dataframe.csv
-          python -u analyze_current_outages.py -f output_files/snopud_outages_dataframe.csv -l .5 -c 1 -e .1 -u snopud --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"          
+          python -u analyze_current_outages.py -f output_files/snopud_outages_dataframe.csv -l .25 -c 100 -e 4 -u snopud --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1002452542176" --telegram-thread-id "4789" --geocode-api-key "${GEOCODE_API_KEY}"          
 
