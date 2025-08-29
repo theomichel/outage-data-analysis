@@ -381,6 +381,14 @@ def main():
         except Exception as e:
             print(f"Warning: Failed to update incremental file '{args.incremental}': {e}")
     
+    # Exit with appropriate code based on whether new data was found
+    if files_exported > 0:
+        print("Exiting with code 0 (new data processed)")
+        sys.exit(0)  # Success - new data was processed
+    else:
+        print("Exiting with code 1 (no new data)")
+ # No new data found
+
 
 if __name__ == "__main__":
     main()
