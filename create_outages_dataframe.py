@@ -480,8 +480,8 @@ def main():
                 for i, file in enumerate(files, 1):
                     print(f"{i}. {os.path.basename(file)}")
             elif len(all_files) == 1:
-                files = all_files
-                print(f"Only 1 file found, processing: {os.path.basename(all_files[0])}")
+                files = []
+                print(f"Only 1 file found ({os.path.basename(all_files[0])}) and latest files requested. Skipping processing.")
             else:
                 files = []
                 print("No files found matching pattern")

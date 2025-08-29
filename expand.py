@@ -312,7 +312,7 @@ def main():
             timestamp_dt = timestamp_dt.replace(tzinfo=timezone.utc)
         else:
             timestamp_dt = timestamp_dt.astimezone(timezone.utc)
-        if stats['object'].endswith(rel_path) and timestamp_dt > start_date_utc and timestamp_dt <= end_date_utc:
+        if stats['object'].endswith(rel_path) and timestamp_dt >= start_date_utc and timestamp_dt <= end_date_utc:
             file_versions.append(stats)
 
     if args.count_only:
@@ -387,7 +387,7 @@ def main():
         sys.exit(0)  # Success - new data was processed
     else:
         print("Exiting with code 1 (no new data)")
- # No new data found
+        sys.exit(1)  # No new data found
 
 
 if __name__ == "__main__":
