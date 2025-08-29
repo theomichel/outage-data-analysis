@@ -110,6 +110,7 @@ jobs:
           python -u expand.py -r ../snopud-outage -i last_file_snopud.txt -o output_files -l 2 ../snopud-outage/KMLOutageAreas.xml
 
       - name: Save snopud progress if succeeded
+        continue-on-error: true
         if: success()
         run: |
           git add last_file_snopud.txt
