@@ -525,6 +525,25 @@ def main():
         print(f"Aggregated {len(df)} outage updates into {out_csv}")
     else:
         print("No outage data found to aggregate.")
+        # Create empty CSV file with correct columns
+        out_csv = args.output_file if args.output_file else "outage_updates.csv"
+        empty_df = pd.DataFrame(columns=[
+            "utility",
+            "outage_id", 
+            "file_datetime",
+            "start_time",
+            "customers_impacted",
+            "status",
+            "cause",
+            "est_restoration_time",
+            "polygon_json",
+            "center_lon",
+            "center_lat",
+            "radius",
+            "isFromMostRecent"
+        ])
+        empty_df.to_csv(out_csv, index=False)
+        print(f"Created empty CSV file with correct columns: {out_csv}")
 
     print(f"====== create_outages_dataframe.py completed =======")
 
