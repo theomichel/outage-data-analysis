@@ -29,6 +29,7 @@ jobs:
         with:
           repository: davemattson/pse-outage
           path: pse-outage
+          fetch-depth: 10
           
       - name: Set up Python
         uses: actions/setup-python@v5
