@@ -121,43 +121,47 @@ def count_versions(repo_path, rel_path, count, branch='main'):
     
     return version_count
 
-
-def find_latest_exported_file(output_dir, base_filename):
+def get_last_processed_timestamp(incremental_file_path, base_filename):
     """
-    Find the latest exported file in the output directory based on the timestamp in the filename.
-    Returns the datetime of the latest file, or None if no files found.
-    Files are expected to be in format: TIMESTAMP-filename where TIMESTAMP is from safe_timestamp regex.
+    Read the last processed filename from a text file and extract its timestamp.
+    Returns the datetime of the last processed file, or None if file doesn't exist or is invalid.
     """
-    if not os.path.exists(output_dir):
+    if not os.path.exists(incremental_file_path):
+        print(f"Warning: Incremental file '{incremental_file_path}' does not exist. Starting from beginning.")
         return None
     
-    latest_datetime = None
-    latest_file = None
-    
-    # Look for files that match the export pattern: timestamp-filename
-    for filename in os.listdir(output_dir):
-        if filename.endswith(f"-{base_filename}"):
-            # Extract timestamp part (everything before the last occurrence of -filename)
-            timestamp_part = filename[:-len(f"-{base_filename}")]
+    try:
+        with open(incremental_file_path, 'r') as f:
+            last_filename = f.read().strip()
+        
+        if not last_filename:
+            print(f"Warning: Incremental file '{incremental_file_path}' is empty. Starting from beginning.")
+            return None
+        
+        # Extract timestamp part from the filename (format: TIMESTAMP-filename)
+        if not last_filename.endswith(f"-{base_filename}"):
+            print(f"Warning: Last processed filename '{last_filename}' does not match expected format. Starting from beginning.")
+            return None
+        
+        timestamp_part = last_filename[:-len(f"-{base_filename}")]
+        
+        # Reconstruct the ISO format by adding back the + and colons for timezone
+        if len(timestamp_part) >= 17:  # At minimum YYYY-MM-DDTHHMMSS
+            iso_timestamp = f"{timestamp_part}+0000" if len(timestamp_part) == 17 else f"{timestamp_part[:17]}+{timestamp_part[17:]}"
             
-            # The script creates files with safe_timestamp = re.sub(r'[^0-9T-]', '', version['timestamp'])
-            # So we need to reconstruct the original timestamp format
-            # Expected format: YYYY-MM-DDTHHMMSS0000 (colons and + removed by regex)
-            if len(timestamp_part) >= 17:  # At minimum YYYY-MM-DDTHHMMSS
-                # Reconstruct the ISO format by adding back the + and colons for timezone
-                iso_timestamp = f"{timestamp_part}+0000" if len(timestamp_part) == 17 else f"{timestamp_part[:17]}+{timestamp_part[17:]}"
-                
-                try:
-                    file_datetime = datetime.strptime(iso_timestamp, "%Y-%m-%dT%H%M%S%z") # 2025-02-28T0353340000
-                    if latest_datetime is None or file_datetime > latest_datetime:
-                        latest_datetime = file_datetime
-                        latest_file = filename
-                except ValueError as e:
-                    raise ValueError(f"Failed to parse timestamp from exported file '{filename}': {e}")
-    
-    if latest_datetime:
-        return latest_datetime
-    else:
+            try:
+                file_datetime = datetime.strptime(iso_timestamp, "%Y-%m-%dT%H%M%S%z")
+                print(f"Found last processed file: {last_filename} with timestamp: {file_datetime}")
+                return file_datetime
+            except ValueError as e:
+                print(f"Warning: Failed to parse timestamp from last processed file '{last_filename}': {e}. Starting from beginning.")
+                return None
+        else:
+            print(f"Warning: Last processed filename '{last_filename}' has invalid timestamp format. Starting from beginning.")
+            return None
+            
+    except Exception as e:
+        print(f"Warning: Error reading incremental file '{incremental_file_path}': {e}. Starting from beginning.")
         return None
 
 
@@ -176,7 +180,7 @@ def main():
     parser.add_argument('--count-only', '-c', action='store_true', help='Only count the number of versions available, do not export files')
     parser.add_argument('--start-datetime', '-s', help='Start date/time (UTC) to filter by in YYYY-MM-DDTHH:MM:SS-Z format (default: all time)')
     parser.add_argument('--end-datetime', '-e', help='End date/time (UTC) to filter by in YYYY-MM-DDTHH:MM:SS-Z format (default: all time)')
-    parser.add_argument('--incremental', '-i', action='store_true', help='Use the timestamp of the latest exported file as start datetime and now as end datetime')
+    parser.add_argument('--incremental', '-i', type=str, help='Path to a text file containing the last processed filename. Use the timestamp of that file as start datetime and now as end datetime')
     parser.add_argument('--mock', action='store_true', help='Use mock git data for testing')
     args = parser.parse_args()
 
@@ -191,12 +195,12 @@ def main():
         if args.start_datetime or args.end_datetime:
             print("Warning: --incremental flag overrides --start-datetime and --end-datetime arguments")
         
-        latest_file_datetime = find_latest_exported_file(output_dir, filename)
-        if latest_file_datetime:
-            start_date_utc = latest_file_datetime
+        last_processed_datetime = get_last_processed_timestamp(args.incremental, filename)
+        if last_processed_datetime:
+            start_date_utc = last_processed_datetime
             print(f"Incremental mode: Starting from {start_date_utc}")
         else:
-            print("No existing exported files found. Using all time as starting point.")
+            print("No valid last processed file found. Using all time as starting point.")
             start_date_utc = datetime.min.replace(tzinfo=timezone.utc)
         
         end_date_utc = datetime.now(timezone.utc)
@@ -286,7 +290,7 @@ def main():
 
     # Handle count-only mode without date filtering (only when no incremental and no explicit dates)
     # TODO: move this up so that all the argument interaction is handled in one place
-    if args.count_only and not args.incremental and args.start_datetime is None and args.end_datetime is None:
+    if args.count_only and args.incremental is None and args.start_datetime is None and args.end_datetime is None:
         print(f"Counting versions of {rel_path}...")
         version_count = count_versions(repo_path, rel_path, args.limit, args.branch)
         print(f"Found {version_count} versions of '{rel_path}' in branch '{args.branch}'")
@@ -317,6 +321,7 @@ def main():
 
     # Display the results and export file versions
     files_exported = 0
+    newest_processed_filename = None
     if not file_versions:
         print(f"No version history found for '{rel_path}' in branch '{args.branch}' based on date range {start_date_utc} to {end_date_utc}.")
     else:
@@ -351,6 +356,9 @@ def main():
                 
                 print(f"   Exported to: {export_filename}")
                 files_exported += 1
+                # Track the first successfully processed filename (most recent commit)
+                if newest_processed_filename is None:
+                    newest_processed_filename = export_filename
             except git.exc.GitCommandError:
                 print(f"   Could not export file at this commit (possibly binary or renamed)")
             except Exception as e:
@@ -363,6 +371,15 @@ def main():
             print()
     
     print(f"====== expand.py completed: {files_exported} files exported =======")
+    
+    # Write the newest filename to the incremental file if successful
+    if args.incremental and files_exported > 0 and newest_processed_filename:
+        try:
+            with open(args.incremental, 'w') as f:
+                f.write(newest_processed_filename)
+            print(f"Updated incremental file '{args.incremental}' with last processed filename: {newest_processed_filename}")
+        except Exception as e:
+            print(f"Warning: Failed to update incremental file '{args.incremental}': {e}")
     
     # Exit with appropriate code based on whether new data was found
     if files_exported > 0:
