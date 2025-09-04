@@ -249,9 +249,27 @@ def main():
         # outages in both: we want to send a notification for these if they didn't meet our thresholds in previous
         # but meet our thresholds in current
 
-        new_outages = current_file_df[~current_file_df['outage_id'].isin(previous_file_df['outage_id'])]
-        resolved_outages = previous_file_df[~previous_file_df['outage_id'].isin(current_file_df['outage_id'])]
-        active_outages = current_file_df[current_file_df['outage_id'].isin(previous_file_df['outage_id'])]
+        # Handle empty DataFrames to avoid KeyError when accessing columns
+        if current_file_df.empty and previous_file_df.empty:
+            # Both files are empty, no outages to compare
+            new_outages = pd.DataFrame()
+            resolved_outages = pd.DataFrame()
+            active_outages = pd.DataFrame()
+        elif current_file_df.empty:
+            # Current file is empty, all previous outages are resolved
+            new_outages = pd.DataFrame()
+            resolved_outages = previous_file_df.copy()
+            active_outages = pd.DataFrame()
+        elif previous_file_df.empty:
+            # Previous file is empty, all current outages are new
+            new_outages = current_file_df.copy()
+            resolved_outages = pd.DataFrame()
+            active_outages = pd.DataFrame()
+        else:
+            # Both DataFrames have data, perform normal comparison
+            new_outages = current_file_df[~current_file_df['outage_id'].isin(previous_file_df['outage_id'])]
+            resolved_outages = previous_file_df[~previous_file_df['outage_id'].isin(current_file_df['outage_id'])]
+            active_outages = current_file_df[current_file_df['outage_id'].isin(previous_file_df['outage_id'])]
 
 
         notifiable_new_outages = new_outages[
