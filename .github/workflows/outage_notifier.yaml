@@ -44,6 +44,13 @@ jobs:
           repository: davemattson/snopud-outage
           path: snopud-outage
           fetch-depth: 20
+
+      - name: Checkout the PGE repository
+        uses: actions/checkout@v4
+        with:
+          repository: theomiche/pge-outages
+          path: pge-outages
+          fetch-depth: 20
           
       - name: Set up Python
         uses: actions/setup-python@v5
