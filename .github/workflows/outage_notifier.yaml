@@ -73,6 +73,7 @@ jobs:
         continue-on-error: true
         if: success()
         run: |
+          git pull origin main
           git add last_file_pse_test.txt
           git commit -m "updating file to track latest processed commit for PSE"
           git push -u origin main
@@ -92,6 +93,7 @@ jobs:
         continue-on-error: true
         if: success()
         run: |
+          git pull origin main
           git add last_file_scl_test.txt
           git commit -m "updating file to track latest processed commit for SCL"
           git push -u origin main
@@ -111,6 +113,7 @@ jobs:
         continue-on-error: true
         if: success()
         run: |
+          git pull origin main
           git add last_file_snopud_test.txt
           git commit -m "updating file to track latest processed commit for snopud"
           git push -u origin main
