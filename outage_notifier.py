@@ -272,18 +272,20 @@ def main():
             active_outages = current_file_df[current_file_df['outage_id'].isin(previous_file_df['outage_id'])]
 
 
-        notifiable_new_outages = new_outages[
-            ((new_outages['expected_length_minutes'] > expected_length_threshold_minutes) &
-            (new_outages['customers_impacted'] > args.customer_threshold) &
-            (new_outages['elapsed_time_minutes'] > elapsed_time_threshold_minutes)) |
-            (new_outages['customers_impacted'] > args.large_outage_customer_threshold)
-        ]
+        if not new_outages.empty:
+            notifiable_new_outages = new_outages[
+                ((new_outages['expected_length_minutes'] > expected_length_threshold_minutes) &
+                (new_outages['customers_impacted'] > args.customer_threshold) &
+                (new_outages['elapsed_time_minutes'] > elapsed_time_threshold_minutes)) |
+                (new_outages['customers_impacted'] > args.large_outage_customer_threshold)
+            ]
 
 
-        notifiable_resolved_outages = resolved_outages[
-            (resolved_outages['customers_impacted'] > args.customer_threshold) &
-            (resolved_outages['elapsed_time_minutes'] > elapsed_time_threshold_minutes)
-        ]
+        if not resolved_outages.empty:
+            notifiable_resolved_outages = resolved_outages[
+                (resolved_outages['customers_impacted'] > args.customer_threshold) &
+                (resolved_outages['elapsed_time_minutes'] > elapsed_time_threshold_minutes)
+            ]
 
         # Check active outages (outages that exist in both previous and current files)
         notifiable_active_outages = pd.DataFrame()
