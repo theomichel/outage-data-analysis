@@ -588,7 +588,7 @@ def get_filename_suffix_for_utility(utility):
     elif (utility == "snopud"):
         filename_suffix = "-KMLOutageAreas.xml"
     elif (utility == "pge"):
-        filename_suffix = "-outages.json"
+        filename_suffix = "-pge-events.json"
     else:
         filename_suffix = ""
     return filename_suffix
