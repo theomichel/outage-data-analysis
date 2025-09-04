@@ -9,7 +9,7 @@ from dateutil.parser import parse as parse_dt
 from pykml import parser
 import math
 import logging 
-
+import requests
 
 OUTPUT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 local_timezone = pytz.timezone('US/Pacific')
@@ -441,7 +441,6 @@ def calculate_expected_length_minutes(update_time, est_restoration_time):
     Returns the difference between estimated restoration time and most recent update time.
     """
 
-    print(f"calculate_expected_length_minutes: update_time: {update_time}, est_restoration_time: {est_restoration_time}")
     try:
         if pd.isna(update_time) or pd.isna(est_restoration_time):
             return None
@@ -465,7 +464,6 @@ def calculate_active_duration_minutes(start_time, current_time):
     Returns the difference between current time and start time.
     """
     try:        
-        print(f"Calculating active duration from start_time: {start_time} and current_time: {current_time}")
         # Convert to datetime if it's a string
         start_time = pd.to_datetime(start_time)
         current_time = pd.to_datetime(current_time)

@@ -5,6 +5,7 @@ import json
 import math
 import requests
 import os
+import sys
 import outage_utils
 import glob
 
@@ -31,7 +32,7 @@ def send_telegram_message(token, chat_id, message, thread_id=None):
         print(f"Error sending Telegram message: {e}")
         return False
 
-def send_notification(notification_data, file_input, thresholds, bot_token=None, chat_id=None, thread_id=None, geocode_api_key=None, notification_output_dir="."):
+def send_notification(notification_data, thresholds, bot_token=None, chat_id=None, thread_id=None, geocode_api_key=None, notification_output_dir="."):
     """
     Send Telegram notification about outages that meet the threshold criteria.
     notification_data contains: new_outages, resolved_outages, new_customers, resolved_customers
@@ -39,6 +40,7 @@ def send_notification(notification_data, file_input, thresholds, bot_token=None,
     try:
         new_outages = notification_data['new_outages']
         resolved_outages = notification_data['resolved_outages']
+        active_outages = notification_data['active_outages']
         messages_to_send = []
         
         # Create individual notification for each new outage
@@ -63,10 +65,37 @@ def send_notification(notification_data, file_input, thresholds, bot_token=None,
                 
                 # Add location if available
                 if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
-                    location_info = reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
+                    location_info = outage_utils.reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
                     new_message += f"Location: {location_info}\n"
                 
                 messages_to_send.append(('new', new_message, outage['outage_id']))
+
+        if not active_outages.empty:
+            for _, outage in active_outages.iterrows():
+                
+                elapsed_hours = outage['elapsed_time_minutes'] / 60
+                
+                new_message = f"🚨 ESCALATED OUTAGE ALERT 🚨\n\n"
+                new_message += f"Utility: {outage['utility'].upper()}\n"
+                new_message += f"ID: {outage['outage_id']}\n"
+                new_message += f"Customers: {outage['customers_impacted']:,.0f} \n"
+                new_message += f"Current Duration: {elapsed_hours:.1f}h \n"
+                
+                # Add estimated duration if available
+                if pd.notna(outage['expected_length_minutes']) and outage['expected_length_minutes'] is not None:
+                    expected_hours = outage['expected_length_minutes'] / 60
+                    new_message += f"Expected Duration: {expected_hours:.1f}h \n"
+                
+                new_message += f"Status: {outage['status']}\n"
+                new_message += f"Cause: {outage['cause']}\n"
+                
+                # Add location if available
+                if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
+                    location_info = outage_utils.reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
+                    new_message += f"Location: {location_info}\n"
+                
+                messages_to_send.append(('active', new_message, outage['outage_id']))
+
 
         # Create individual notification for each resolved outage  
         if not resolved_outages.empty:
@@ -83,7 +112,7 @@ def send_notification(notification_data, file_input, thresholds, bot_token=None,
                 
                 # Add location if available
                 if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
-                    location_info = reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
+                    location_info = outage_utils.reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
                     resolved_message += f"Location: {location_info}\n"
                 
                 messages_to_send.append(('resolved', resolved_message, outage['outage_id']))
@@ -120,8 +149,10 @@ def main():
     parser.add_argument('-d', '--directory', type=str, default='.', help='Directory containing files that match the pattern')
     parser.add_argument('-r', '--remaining_expected_length_threshold', type=float, default=0.0, 
                        help='Minimum remaining expected length threshold in hours (default: 0.0)')
-    parser.add_argument('-c', '--customer_threshold', type=int, default=0, 
-                       help='Customers affected threshold  (default: 0)')
+    parser.add_argument('-c', '--customer_threshold', type=int, default=100, 
+                       help='Customers affected threshold  (default: 100)')
+    parser.add_argument('-lc', '--large_outage_customer_threshold', type=int, default=1000, 
+                       help='Customers affected threshold  (default: 1000)')
     parser.add_argument('-e', '--elapsed_time_threshold', type=float, default=0.0, 
                        help='Minimum elapsed time threshold in hours (default: 0.0)')
     parser.add_argument('-u', '--utility', type=str, required=True,
@@ -147,6 +178,7 @@ def main():
 
     print(f"Expected length threshold: {args.remaining_expected_length_threshold} hours ({expected_length_threshold_minutes} minutes)")
     print(f"Customer threshold: {args.customer_threshold}")
+    print(f"Large outage customer threshold: {args.large_outage_customer_threshold}")
     print(f"Elapsed time threshold: {args.elapsed_time_threshold} hours ({elapsed_time_threshold_minutes} minutes)")
 
 
@@ -154,6 +186,10 @@ def main():
     file_pattern = os.path.join(args.directory, "*"+filename_suffix)
     print(f"file pattern {file_pattern}")
     all_files = sorted(glob.glob(file_pattern), reverse=False)
+
+    if(len(all_files) < 2):
+        print("Not enough files to compare. Exiting.")
+        sys.exit(3)
 
     is_first_file = True
     previous_file_df = pd.DataFrame()
@@ -202,6 +238,7 @@ def main():
         if is_first_file:
             is_first_file = False
             previous_file_df = current_file_df
+            print(f"This was the first file, skipping comparisons")
             continue
 
 
@@ -218,9 +255,10 @@ def main():
 
 
         notifiable_new_outages = new_outages[
-            (new_outages['expected_length_minutes'] > expected_length_threshold_minutes) &
+            ((new_outages['expected_length_minutes'] > expected_length_threshold_minutes) &
             (new_outages['customers_impacted'] > args.customer_threshold) &
-            (new_outages['elapsed_time_minutes'] > elapsed_time_threshold_minutes)
+            (new_outages['elapsed_time_minutes'] > elapsed_time_threshold_minutes)) |
+            (new_outages['customers_impacted'] > args.large_outage_customer_threshold)
         ]
 
 
@@ -245,13 +283,27 @@ def main():
             # Check which active outages meet thresholds now but didn't before
             notifiable_active_outages = active_merged[
                 # Current data meets all thresholds
-                (active_merged['expected_length_minutes_current'] > expected_length_threshold_minutes) &
-                (active_merged['customers_impacted_current'] > args.customer_threshold) &
-                (active_merged['elapsed_time_minutes_current'] > elapsed_time_threshold_minutes) &
+                (
+                    (
+                        (active_merged['expected_length_minutes_current'] > expected_length_threshold_minutes) &
+                        (active_merged['customers_impacted_current'] > args.customer_threshold) &
+                        (active_merged['elapsed_time_minutes_current'] > elapsed_time_threshold_minutes)
+                    ) |
+                    (
+                        (active_merged['customers_impacted_current'] > args.large_outage_customer_threshold)
+                    )
+                ) &
                 # Previous data missed at least one threshold
-                ((pd.isna(active_merged['expected_length_minutes_previous']) | (active_merged['expected_length_minutes_previous'] <= expected_length_threshold_minutes)) |
-                (pd.isna(active_merged['customers_impacted_previous']) | (active_merged['customers_impacted_previous'] <= args.customer_threshold)) |
-                (pd.isna(active_merged['elapsed_time_minutes_previous']) | (active_merged['elapsed_time_minutes_previous'] <= elapsed_time_threshold_minutes)))
+                (
+                    (
+                        (pd.isna(active_merged['expected_length_minutes_previous']) | (active_merged['expected_length_minutes_previous'] <= expected_length_threshold_minutes)) |
+                        (pd.isna(active_merged['customers_impacted_previous']) | (active_merged['customers_impacted_previous'] <= args.customer_threshold)) |
+                        (pd.isna(active_merged['elapsed_time_minutes_previous']) | (active_merged['elapsed_time_minutes_previous'] <= elapsed_time_threshold_minutes))
+                    ) &
+                    (
+                        pd.isna(active_merged['customers_impacted_previous']) | (active_merged['customers_impacted_previous'] <= args.large_outage_customer_threshold)
+                    )
+                )
             ]
             
             # Rename columns to match expected format
@@ -268,19 +320,22 @@ def main():
 
         print(f"====== completed processing for file =======")
 
-    # # Send notification if there are new outages or resolved outages
-    # if len(new_outages) > 0 or len(resolved_outages) > 0:
-    #     thresholds = {
-    #         'length': args.length_threshold,
-    #         'customers': args.customer_threshold,
-    #         'elapsed': args.elapsed_time_threshold
-    #     }
-    #     # Pass both new and resolved outages to notification logic
-    #     notification_data = {
-    #         'new_outages': new_outages,
-    #         'resolved_outages': resolved_outages
-    #     }
-    #     send_notification(notification_data, args.file_input, thresholds, args.telegram_token, args.telegram_chat_id, args.telegram_thread_id, args.geocode_api_key, args.notification_output_dir)
+        # Send notification if there are new outages or resolved outages
+        print(f"sending notifications if there are new outages or resolved outages or notifiable active outages")
+        if len(new_outages) > 0 or len(resolved_outages) > 0 or len(notifiable_active_outages) > 0:
+            thresholds = {
+                'length': args.remaining_expected_length_threshold,
+                'customers': args.customer_threshold,
+                'large_outage_customers': args.large_outage_customer_threshold,
+                'elapsed': args.elapsed_time_threshold
+            }
+            # Pass both new and resolved outages to notification logic
+            notification_data = {
+                'new_outages': new_outages,
+                'resolved_outages': resolved_outages,
+                'active_outages': notifiable_active_outages
+            }
+            send_notification(notification_data, thresholds, args.telegram_token, args.telegram_chat_id, args.telegram_thread_id, args.geocode_api_key, args.notification_output_dir)
 
     print(f"====== outage_notifier.py completed =======")
 
