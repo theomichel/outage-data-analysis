@@ -1,0 +1,83 @@
+name: Send notifications for outages
+
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron:  '*/6 * * * *'
+
+env:
+  PWRONDATABOT_TOKEN: ${{ secrets.PWRONDATABOT_TOKEN }}
+  GEOCODE_API_KEY: ${{ secrets.GEOCODE_API_KEY }}
+
+jobs:
+  outage_watcher:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: outage-data-analysis
+       
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: outage-data-analysis
+
+      - name: Checkout the pse repository
+        uses: actions/checkout@v4
+        with:
+          repository: davemattson/pse-outage
+          path: pse-outage
+          fetch-depth: 20
+
+      - name: Checkout the scl repository
+        uses: actions/checkout@v4
+        with:
+          repository: davemattson/scl-outage
+          path: scl-outage
+          fetch-depth: 20
+
+      - name: Checkout the snopud repository
+        uses: actions/checkout@v4
+        with:
+          repository: davemattson/snopud-outage
+          path: snopud-outage
+          fetch-depth: 20
+          
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x' # Use the latest Python 3 version
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pykml
+          pip install pandas
+          pip install pytz
+          pip install requests
+          pip install gitpython
+
+      - uses: qoomon/actions--setup-git@v1
+        with:
+          user: bot
+
+      - name: Run pse expand
+        continue-on-error: true
+        run: |
+          git pull origin main
+          python -u expand.py -r ../pse-outage -i last_file_pse_test.txt -o output_files -l 10 ../pse-outage/pse-events.json
+
+      - name: Save pse progress if succeeded
+        continue-on-error: true
+        if: success()
+        run: |
+          git add last_file_pse_test.txt
+          git commit -m "updating file to track latest processed commit for PSE"
+          git push -u origin main
+
+      - name: Run pse notify
+        continue-on-error: true
+        run: |
+          python -d output_files -r .5 -c 1 -e .1 -u pse --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"

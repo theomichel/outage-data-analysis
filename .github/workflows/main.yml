@@ -29,21 +29,21 @@ jobs:
         with:
           repository: davemattson/pse-outage
           path: pse-outage
-          fetch-depth: 10
+          fetch-depth: 20
 
       - name: Checkout the scl repository
         uses: actions/checkout@v4
         with:
           repository: davemattson/scl-outage
           path: scl-outage
-          fetch-depth: 10
+          fetch-depth: 20
 
       - name: Checkout the snopud repository
         uses: actions/checkout@v4
         with:
           repository: davemattson/snopud-outage
           path: snopud-outage
-          fetch-depth: 10
+          fetch-depth: 20
           
       - name: Set up Python
         uses: actions/setup-python@v5
