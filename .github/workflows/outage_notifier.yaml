@@ -73,6 +73,7 @@ jobs:
         continue-on-error: true
         if: success()
         run: |
+          git pull origin main
           git add last_file_pse_test.txt
           git commit -m "updating file to track latest processed commit for PSE"
           git push -u origin main
@@ -80,4 +81,44 @@ jobs:
       - name: Run pse notify
         continue-on-error: true
         run: |
-          python outage_notifier.py -d output_files -r .5 -c 1 -e .1 -u pse --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
+          python outage_notifier.py -d output_files -r .5 -c 1 -lc 100 -e .1 -u pse --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
+
+      - name: Run scl expand
+        continue-on-error: true
+        run: |
+          git pull origin main
+          python -u expand.py -r ../scl-outage -i last_file_scl_test.txt -o output_files -l 10 ../scl-outage/scl-events.json
+
+      - name: Save scl progress if succeeded
+        continue-on-error: true
+        if: success()
+        run: |
+          git pull origin main
+          git add last_file_scl_test.txt
+          git commit -m "updating file to track latest processed commit for SCL"
+          git push -u origin main
+
+      - name: Run scl notify
+        continue-on-error: true
+        run: |
+          python outage_notifier.py -d output_files -r .5 -c 1 -lc 100 -e .1 -u scl --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
+
+      - name: Run snopud expand
+        continue-on-error: true
+        run: |
+          git pull origin main
+          python -u expand.py -r ../snopud-outage -i last_file_snopud_test.txt -o output_files -l 10 ../snopud-outage/KMLOutageAreas.xml
+
+      - name: Save snopud progress if succeeded
+        continue-on-error: true
+        if: success()
+        run: |
+          git pull origin main
+          git add last_file_snopud_test.txt
+          git commit -m "updating file to track latest processed commit for snopud"
+          git push -u origin main
+
+      - name: Run snopud notify
+        continue-on-error: true
+        run: |
+          python outage_notifier.py -d output_files -r .5 -c 1 -lc 100 -e .1 -u snopud --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
