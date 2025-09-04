@@ -4,7 +4,7 @@ on:
   push:
   workflow_dispatch:
   schedule:
-    - cron:  '*/6 * * * *'
+    - cron:  '*/5 * * * *'
 
 env:
   PWRONDATABOT_TOKEN: ${{ secrets.PWRONDATABOT_TOKEN }}
@@ -80,4 +80,4 @@ jobs:
       - name: Run pse notify
         continue-on-error: true
         run: |
-          python -d output_files -r .5 -c 1 -e .1 -u pse --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
+          python outage_notifier.py -d output_files -r .5 -c 1 -e .1 -u pse --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
