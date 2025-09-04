@@ -1,4 +1,4 @@
-name: Send notifications for new/resolved outages
+name: Send notifications for outages
 
 on:
   push:
