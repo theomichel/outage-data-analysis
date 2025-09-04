@@ -271,7 +271,7 @@ def main():
             resolved_outages = previous_file_df[~previous_file_df['outage_id'].isin(current_file_df['outage_id'])]
             active_outages = current_file_df[current_file_df['outage_id'].isin(previous_file_df['outage_id'])]
 
-
+        notifiable_new_outages = pd.DataFrame()
         if not new_outages.empty:
             notifiable_new_outages = new_outages[
                 ((new_outages['expected_length_minutes'] > expected_length_threshold_minutes) &
@@ -280,7 +280,7 @@ def main():
                 (new_outages['customers_impacted'] > args.large_outage_customer_threshold)
             ]
 
-
+        notifiable_resolved_outages = pd.DataFrame()
         if not resolved_outages.empty:
             notifiable_resolved_outages = resolved_outages[
                 (resolved_outages['customers_impacted'] > args.customer_threshold) &
