@@ -48,7 +48,7 @@ jobs:
       - name: Checkout the PGE repository
         uses: actions/checkout@v4
         with:
-          repository: theomiche/pge-outages
+          repository: theomichel/pge-outages
           path: pge-outages
           fetch-depth: 20
           
