@@ -143,6 +143,13 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
     except Exception as e:
         print(f"Error sending notification: {e}")
 
+# print out the dataframe in a pretty format, including just the outageid, customers affected, expected length, and elapsed time
+def print_dataframe_pretty(df):
+    if not df.empty:
+        print(df[['outage_id', 'customers_impacted', 'expected_length_minutes', 'elapsed_time_minutes']])
+    else:
+        print("DataFrame is empty")
+
 def main():
     parser = argparse.ArgumentParser(description="Send notifications about outages based on a set of file updates.")
 
@@ -234,6 +241,8 @@ def main():
                 lambda row: outage_utils.calculate_active_duration_minutes(row['start_time'], gmt_file_datetime), 
                 axis=1
             )
+
+        print_dataframe_pretty(current_file_df)
 
         if is_first_file:
             is_first_file = False
@@ -334,9 +343,12 @@ def main():
                     'elapsed_time_minutes_current': 'elapsed_time_minutes'
                 })
 
-        print(f"notifiable_new_outages: {notifiable_new_outages}")
-        print(f"notifiable_resolved_outages: {notifiable_resolved_outages}")
-        print(f"notifiable_active_outages: {notifiable_active_outages}")
+        print(f"notifiable_new_outages:")
+        print_dataframe_pretty(notifiable_new_outages)
+        print(f"notifiable_resolved_outages:")
+        print_dataframe_pretty(notifiable_resolved_outages)
+        print(f"notifiable_active_outages:")
+        print_dataframe_pretty(notifiable_active_outages)
 
         print(f"====== completed processing for file =======")
 
