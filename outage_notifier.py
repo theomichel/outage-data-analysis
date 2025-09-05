@@ -293,7 +293,7 @@ def main():
         if not resolved_outages.empty:
             notifiable_resolved_outages = resolved_outages[
                 (resolved_outages['customers_impacted'] > args.customer_threshold) &
-                (resolved_outages['elapsed_time_minutes'] > elapsed_time_threshold_minutes)
+                (resolved_outages['elapsed_time_minutes'] > expected_length_threshold_minutes)
             ]
 
         # Check active outages (outages that exist in both previous and current files)
