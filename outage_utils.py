@@ -244,12 +244,12 @@ def parse_scl_file(input_file, rows, file_datetime, is_from_most_recent=True):
             "utility": "scl",
             "outage_id": outage_id,
             "file_datetime": file_datetime,
-            # SCL times are in PST as epoch time, so they need to be converted to UTC
-            "start_time": local_timezone.localize(datetime.fromtimestamp(start_time/1000)).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
+            # SCL times are already in UTC as epoch time
+            "start_time": datetime.fromtimestamp(start_time/1000, tz=pytz.utc).strftime(OUTPUT_TIME_FORMAT),
             "customers_impacted": customers_impacted,
             "status": status,
             "cause": cause,
-            "est_restoration_time": local_timezone.localize(datetime.fromtimestamp(est_restoration_time/1000)).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
+            "est_restoration_time": datetime.fromtimestamp(est_restoration_time/1000, tz=pytz.utc).strftime(OUTPUT_TIME_FORMAT),
             "polygon_json": json.dumps(polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,
