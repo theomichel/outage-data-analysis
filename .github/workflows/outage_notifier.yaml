@@ -88,7 +88,7 @@ jobs:
       - name: Run pse notify
         continue-on-error: true
         run: |
-          python outage_notifier.py -d output_files -r .5 -c 1 -lc 100 -e .1 -u pse --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
+          python outage_notifier.py -d output_files -r 4 -c 100 -lc 1000 -e .25 -u pse --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1002452542176" --telegram-thread-id "4789" --geocode-api-key "${GEOCODE_API_KEY}"
 
       - name: Run scl expand
         continue-on-error: true
@@ -108,7 +108,7 @@ jobs:
       - name: Run scl notify
         continue-on-error: true
         run: |
-          python outage_notifier.py -d output_files -r .5 -c 1 -lc 100 -e .1 -u scl --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
+          python outage_notifier.py -d output_files -r 4 -c 100 -lc 1000 -e .25 -u scl --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1002452542176" --telegram-thread-id "4789" --geocode-api-key "${GEOCODE_API_KEY}"
 
       - name: Run snopud expand
         continue-on-error: true
@@ -128,24 +128,4 @@ jobs:
       - name: Run snopud notify
         continue-on-error: true
         run: |
-          python outage_notifier.py -d output_files -r .5 -c 1 -lc 100 -e .1 -u snopud --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
-
-      - name: Run PGE expand
-        continue-on-error: true
-        run: |
-          git pull origin main
-          python -u expand.py -r ../pge-outages -i last_file_pge_test.txt -o output_files -l 10 ../pge-outages/pge-events.json
-
-      - name: Save PGE progress if succeeded
-        continue-on-error: true
-        if: success()
-        run: |
-          git pull origin main
-          git add last_file_pge_test.txt
-          git commit -m "updating file to track latest processed commit for pge"
-          git push -u origin main
-
-      - name: Run PGE notify
-        continue-on-error: true
-        run: |
-          python outage_notifier.py -d output_files -r 1 -c 50 -lc 100 -e .1 -u pge --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}"
+          python outage_notifier.py -d output_files -r 4 -c 100 -lc 1000 -e .25 -u snopud --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1002452542176" --telegram-thread-id "4789" --geocode-api-key "${GEOCODE_API_KEY}"
