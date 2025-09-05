@@ -342,7 +342,7 @@ def main():
 
         # Send notification if there are new outages or resolved outages
         print(f"sending notifications if there are new outages or resolved outages or notifiable active outages")
-        if len(new_outages) > 0 or len(resolved_outages) > 0 or len(notifiable_active_outages) > 0:
+        if len(notifiable_new_outages) > 0 or len(notifiable_resolved_outages) > 0 or len(notifiable_active_outages) > 0:
             thresholds = {
                 'length': args.remaining_expected_length_threshold,
                 'customers': args.customer_threshold,
@@ -351,8 +351,8 @@ def main():
             }
             # Pass both new and resolved outages to notification logic
             notification_data = {
-                'new_outages': new_outages,
-                'resolved_outages': resolved_outages,
+                'new_outages': notifiable_new_outages,
+                'resolved_outages': notifiable_resolved_outages,
                 'active_outages': notifiable_active_outages
             }
             send_notification(notification_data, thresholds, args.telegram_token, args.telegram_chat_id, args.telegram_thread_id, args.geocode_api_key, args.notification_output_dir)
