@@ -1,0 +1,92 @@
+name: Test send notifications for outages
+
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron:  '*/5 * * * *'
+
+env:
+  PWRONDATABOT_TOKEN: ${{ secrets.PWRONDATABOT_TOKEN }}
+  GEOCODE_API_KEY: ${{ secrets.GEOCODE_API_KEY }}
+
+jobs:
+  outage_watcher:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: outage-data-analysis
+       
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: outage-data-analysis
+
+      - name: Checkout the pse repository
+        uses: actions/checkout@v4
+        with:
+          repository: davemattson/pse-outage
+          path: pse-outage
+          fetch-depth: 20
+
+      - name: Checkout the scl repository
+        uses: actions/checkout@v4
+        with:
+          repository: davemattson/scl-outage
+          path: scl-outage
+          fetch-depth: 20
+
+      - name: Checkout the snopud repository
+        uses: actions/checkout@v4
+        with:
+          repository: davemattson/snopud-outage
+          path: snopud-outage
+          fetch-depth: 20
+
+      - name: Checkout the PGE repository
+        uses: actions/checkout@v4
+        with:
+          repository: theomichel/pge-outages
+          path: pge-outages
+          fetch-depth: 20
+          
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x' # Use the latest Python 3 version
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pykml
+          pip install pandas
+          pip install pytz
+          pip install requests
+          pip install gitpython
+          pip install geopandas
+
+      - uses: qoomon/actions--setup-git@v1
+        with:
+          user: bot
+
+      - name: Run PG&E expand
+        continue-on-error: true
+        run: |
+          git pull origin main
+          python -u expand.py -r ../pge-outages -i last_file_pge_test.txt -o output_files -l 10 ../pge-outages/pge-events.json
+
+      - name: Save PG&E progress if succeeded
+        continue-on-error: true
+        if: success()
+        run: |
+          git pull origin main
+          git add last_file_pge_test.txt
+          git commit -m "updating file to track latest processed commit for PG&E"
+          git push -u origin main
+
+      - name: Run PG&E notify
+        continue-on-error: true
+        run: |
+          python outage_notifier.py -d output_files -r 1 -c 10 -lc 100 -e .1 -u pge --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}" -zw "./constant_data/bay_area_zip_codes.txt" -zb "./constant_data/wa_washington_zip_codes_geo.min.json"
