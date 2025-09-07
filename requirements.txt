@@ -1,0 +1,13 @@
+pandas
+matplotlib
+numpy
+geopandas
+folium
+branca
+contextily
+shapely
+pykml
+python-dateutil
+pytz
+requests
+gitpython

@@ -8,6 +8,7 @@ import os
 import sys
 import outage_utils
 import glob
+import zip_utils
 
 def send_telegram_message(token, chat_id, message, thread_id=None):
     """Sends a message to a specified Telegram chat."""
@@ -174,6 +175,10 @@ def main():
                        help='API key for geocoding service (optional)')
     parser.add_argument('--notification-output-dir', type=str, default=".",
                        help='Directory to save notification files for testing (default: current directory)')
+    parser.add_argument('-zw', '--zip-whitelist-file', type=str,
+                       help='File containing zip codes to filter (one per line, optional)')
+    parser.add_argument('-zb', '--zip-boundaries-file', type=str,
+                       help='File containing zip codes boundaries (required if zip whitelist is provided)')                       
     args = parser.parse_args()
     
     print(f"====== analyze_current_outages.py starting for utility {args.utility} =======")
@@ -188,6 +193,24 @@ def main():
     print(f"Large outage customer threshold: {args.large_outage_customer_threshold}")
     print(f"Elapsed time threshold: {args.elapsed_time_threshold} hours ({elapsed_time_threshold_minutes} minutes)")
 
+    # Load zip code whitelist if provided
+    zip_code_whitelist = None
+    if args.zip_whitelist_file:
+        try:
+            with open(args.zip_whitelist_file, 'r') as f:
+                zip_code_whitelist = [line.strip() for line in f if line.strip()]
+            print(f"Loaded {len(zip_code_whitelist)} zip codes from whitelist file")
+        except FileNotFoundError:
+            print(f"Warning: Zip whitelist file not found: {args.zip_whitelist_file}")
+        except Exception as e:
+            print(f"Error loading zip whitelist file: {e}")
+
+    # Load zip code boundaries
+    if args.zip_boundaries_file:
+        zip_utils.load_zip_codes(args.zip_boundaries_file)
+    else:
+        print("Error: Zip whitelist provided without zip boundaries. Exiting.")
+        sys.exit(4)
 
     filename_suffix = outage_utils.get_filename_suffix_for_utility(args.utility)
     file_pattern = os.path.join(args.directory, "*"+filename_suffix)
@@ -227,7 +250,16 @@ def main():
                 print("no utility specified, will not parse")
 
         current_file_df = pd.DataFrame(current_file_rows)
-      
+
+        # filter outages by zipcode based on the whitelist of zipcodes
+        if not current_file_df.empty and zip_code_whitelist is not None:
+            # retrieve the zipcode for each outage based on the center_lon and center_lat
+            current_file_df['zipcode'] = current_file_df.apply(
+                lambda row: zip_utils.get_zip_code(row['center_lon'], row['center_lat']),
+                axis=1
+            )
+            current_file_df = current_file_df[current_file_df['zipcode'].isin(zip_code_whitelist)]
+        
         # add some calculated columns to the current file df
         if not current_file_df.empty:
             # Calculate expected length in minutes for latest outages
