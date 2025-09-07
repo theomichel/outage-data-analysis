@@ -65,6 +65,7 @@ jobs:
           pip install pytz
           pip install requests
           pip install gitpython
+          pip install geopandas
 
       - uses: qoomon/actions--setup-git@v1
         with:
