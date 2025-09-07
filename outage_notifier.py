@@ -200,17 +200,16 @@ def main():
             with open(args.zip_whitelist_file, 'r') as f:
                 zip_code_whitelist = [line.strip() for line in f if line.strip()]
             print(f"Loaded {len(zip_code_whitelist)} zip codes from whitelist file")
+                # Load zip code boundaries
+            if args.zip_boundaries_file:
+                zip_utils.load_zip_codes(args.zip_boundaries_file)
+            else:
+                print("Error: Zip whitelist provided without zip boundaries. Exiting.")
+                sys.exit(4)
         except FileNotFoundError:
             print(f"Warning: Zip whitelist file not found: {args.zip_whitelist_file}")
         except Exception as e:
             print(f"Error loading zip whitelist file: {e}")
-
-    # Load zip code boundaries
-    if args.zip_boundaries_file:
-        zip_utils.load_zip_codes(args.zip_boundaries_file)
-    else:
-        print("Error: Zip whitelist provided without zip boundaries. Exiting.")
-        sys.exit(4)
 
     filename_suffix = outage_utils.get_filename_suffix_for_utility(args.utility)
     file_pattern = os.path.join(args.directory, "*"+filename_suffix)
