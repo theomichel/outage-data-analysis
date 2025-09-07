@@ -412,11 +412,10 @@ def parse_pge_file(input_file, rows, file_datetime, is_from_most_recent=True):
             continue
 
         # Convert epoch milliseconds to datetime
-        # TODO: I believe this is in PST, so we need to convert to UTC, but need to check before making changes
-        start_time = datetime.fromtimestamp(start_time_ms / 1000)
+        start_time = datetime.fromtimestamp(start_time_ms / 1000, tz=pytz.utc)
         est_restoration_time = None
         if est_restoration_time_ms:
-            est_restoration_time = datetime.fromtimestamp(est_restoration_time_ms / 1000)
+            est_restoration_time = datetime.fromtimestamp(est_restoration_time_ms / 1000, tz=pytz.utc)
 
         # Create a small circular polygon around the point coordinates
         # Use a radius of approximately 0.001 degrees (roughly 100 meters)
@@ -443,11 +442,11 @@ def parse_pge_file(input_file, rows, file_datetime, is_from_most_recent=True):
             "utility": "pge",
             "outage_id": outage_id,
             "file_datetime": file_datetime.strftime(OUTPUT_TIME_FORMAT),
-            "start_time": local_timezone.localize(start_time).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
+            "start_time": start_time.strftime(OUTPUT_TIME_FORMAT),
             "customers_impacted": customers_impacted,
             "status": status,
             "cause": cause,
-            "est_restoration_time": "none" if est_restoration_time is None else local_timezone.localize(est_restoration_time).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
+            "est_restoration_time": "none" if est_restoration_time is None else est_restoration_time.strftime(OUTPUT_TIME_FORMAT),
             "polygon_json": json.dumps(polygons),
             "center_lon": center_lon,
             "center_lat": center_lat,

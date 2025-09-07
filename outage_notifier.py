@@ -193,7 +193,16 @@ def main():
     print(f"Large outage customer threshold: {args.large_outage_customer_threshold}")
     print(f"Elapsed time threshold: {args.elapsed_time_threshold} hours ({elapsed_time_threshold_minutes} minutes)")
 
-    # Load zip code whitelist if provided
+    filename_suffix = outage_utils.get_filename_suffix_for_utility(args.utility)
+    file_pattern = os.path.join(args.directory, "*"+filename_suffix)
+    print(f"file pattern {file_pattern}")
+    all_files = sorted(glob.glob(file_pattern), reverse=False)
+
+    if(len(all_files) < 2):
+        print("Not enough files to compare. Exiting.")
+        sys.exit(3)
+
+    # Load zip code whitelist and boundaries if provided
     zip_code_whitelist = None
     if args.zip_whitelist_file:
         try:
@@ -211,14 +220,6 @@ def main():
         except Exception as e:
             print(f"Error loading zip whitelist file: {e}")
 
-    filename_suffix = outage_utils.get_filename_suffix_for_utility(args.utility)
-    file_pattern = os.path.join(args.directory, "*"+filename_suffix)
-    print(f"file pattern {file_pattern}")
-    all_files = sorted(glob.glob(file_pattern), reverse=False)
-
-    if(len(all_files) < 2):
-        print("Not enough files to compare. Exiting.")
-        sys.exit(3)
 
     is_first_file = True
     previous_file_df = pd.DataFrame()
