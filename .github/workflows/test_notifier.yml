@@ -1,4 +1,4 @@
-name: Send notifications for outages
+name: Test send notifications for outages
 
 on:
   push:
