@@ -317,13 +317,10 @@ def main():
         if not new_outages.empty:
             notifiable_new_outages = new_outages[
                 ((new_outages['expected_length_minutes'] >= expected_length_threshold_minutes) &
-                (new_outages['customers_impacted'] > args.customer_threshold) &
+                (new_outages['customers_impacted'] >= args.customer_threshold) &
                 (new_outages['elapsed_time_minutes'] >= elapsed_time_threshold_minutes)) |
                 (new_outages['customers_impacted'] >= args.large_outage_customer_threshold)
             ]
-
-        print(f"resolved_outages:")
-        print_dataframe_pretty(resolved_outages)
 
         notifiable_resolved_outages = pd.DataFrame()
         if not resolved_outages.empty:
