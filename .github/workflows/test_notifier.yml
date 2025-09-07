@@ -89,4 +89,4 @@ jobs:
       - name: Run PG&E notify
         continue-on-error: true
         run: |
-          python outage_notifier.py -d output_files -r 1 -c 10 -lc 100 -e .1 -u pge --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}" -zw .\constant_data\bay_area_zip_codes.txt -zb .\constant_data\wa_washington_zip_codes_geo.min.json
+          python outage_notifier.py -d output_files -r 1 -c 10 -lc 100 -e .1 -u pge --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1003012377346" --telegram-thread-id "2" --geocode-api-key "${GEOCODE_API_KEY}" -zw ".\constant_data\bay_area_zip_codes.txt" -zb ".\constant_data\wa_washington_zip_codes_geo.min.json"
