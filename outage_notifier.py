@@ -274,6 +274,7 @@ def main():
                 axis=1
             )
 
+        print(f"current_file_df after zip filtering and adding expected length and elapsed time:")
         print_dataframe_pretty(current_file_df)
 
         if is_first_file:
@@ -315,17 +316,20 @@ def main():
         notifiable_new_outages = pd.DataFrame()
         if not new_outages.empty:
             notifiable_new_outages = new_outages[
-                ((new_outages['expected_length_minutes'] > expected_length_threshold_minutes) &
+                ((new_outages['expected_length_minutes'] >= expected_length_threshold_minutes) &
                 (new_outages['customers_impacted'] > args.customer_threshold) &
-                (new_outages['elapsed_time_minutes'] > elapsed_time_threshold_minutes)) |
-                (new_outages['customers_impacted'] > args.large_outage_customer_threshold)
+                (new_outages['elapsed_time_minutes'] >= elapsed_time_threshold_minutes)) |
+                (new_outages['customers_impacted'] >= args.large_outage_customer_threshold)
             ]
+
+        print(f"resolved_outages:")
+        print_dataframe_pretty(resolved_outages)
 
         notifiable_resolved_outages = pd.DataFrame()
         if not resolved_outages.empty:
             notifiable_resolved_outages = resolved_outages[
-                (resolved_outages['customers_impacted'] > args.customer_threshold) &
-                (resolved_outages['elapsed_time_minutes'] > expected_length_threshold_minutes)
+                (resolved_outages['customers_impacted'] >= args.customer_threshold) &
+                (resolved_outages['elapsed_time_minutes'] >= expected_length_threshold_minutes)
             ]
 
         # Check active outages (outages that exist in both previous and current files)
@@ -346,9 +350,9 @@ def main():
                 # Current data meets all thresholds
                 (
                     (
-                        (active_merged['expected_length_minutes_current'] > expected_length_threshold_minutes) &
-                        (active_merged['customers_impacted_current'] > args.customer_threshold) &
-                        (active_merged['elapsed_time_minutes_current'] > elapsed_time_threshold_minutes)
+                        (active_merged['expected_length_minutes_current'] >= expected_length_threshold_minutes) &
+                        (active_merged['customers_impacted_current'] >= args.customer_threshold) &
+                        (active_merged['elapsed_time_minutes_current'] >= elapsed_time_threshold_minutes)
                     ) |
                     (
                         (active_merged['customers_impacted_current'] > args.large_outage_customer_threshold)
@@ -357,12 +361,12 @@ def main():
                 # Previous data missed at least one threshold
                 (
                     (
-                        (pd.isna(active_merged['expected_length_minutes_previous']) | (active_merged['expected_length_minutes_previous'] <= expected_length_threshold_minutes)) |
-                        (pd.isna(active_merged['customers_impacted_previous']) | (active_merged['customers_impacted_previous'] <= args.customer_threshold)) |
-                        (pd.isna(active_merged['elapsed_time_minutes_previous']) | (active_merged['elapsed_time_minutes_previous'] <= elapsed_time_threshold_minutes))
+                        (pd.isna(active_merged['expected_length_minutes_previous']) | (active_merged['expected_length_minutes_previous'] < expected_length_threshold_minutes)) |
+                        (pd.isna(active_merged['customers_impacted_previous']) | (active_merged['customers_impacted_previous'] < args.customer_threshold)) |
+                        (pd.isna(active_merged['elapsed_time_minutes_previous']) | (active_merged['elapsed_time_minutes_previous'] < elapsed_time_threshold_minutes))
                     ) &
                     (
-                        pd.isna(active_merged['customers_impacted_previous']) | (active_merged['customers_impacted_previous'] <= args.large_outage_customer_threshold)
+                        pd.isna(active_merged['customers_impacted_previous']) | (active_merged['customers_impacted_previous'] < args.large_outage_customer_threshold)
                     )
                 )
             ]

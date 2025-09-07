@@ -10,6 +10,8 @@ from pykml import parser
 import math
 import logging 
 import requests
+import geopandas as gpd
+import time
 
 OUTPUT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 local_timezone = pytz.timezone('US/Pacific')
@@ -374,20 +376,39 @@ def parse_pge_file(input_file, rows, file_datetime, is_from_most_recent=True):
         print(f"error parsing pge file: {input_file}. Defaulting to empty list. Exception: {e}")
         data = []
 
-    for outage in data:
-        outage_id = outage.get("F_OUTAGE_ID")
-        start_time_ms = outage.get("OUTAGE_START")
-        customers_impacted = outage.get("EST_CUSTOMERS", 0)
-        status = outage.get("CREW_CURRENT_STATUS")
-        cause = outage.get("OUTAGE_CAUSE")
-        est_restoration_time_ms = outage.get("CURRENT_ETOR")
-        lat = outage.get("OUTAGE_LATITUDE")
-        lon = outage.get("OUTAGE_LONGITUDE")
+    for outage in data.get("features", []):
+        outage_attributes = outage.get("attributes", {})
+        outage_id = outage_attributes.get("OUTAGE_ID")
+        start_time_ms = outage_attributes.get("OUTAGE_START")
+        customers_impacted = outage_attributes.get("EST_CUSTOMERS", 0)
+        status = outage_attributes.get("CREW_CURRENT_STATUS")
+        cause = outage_attributes.get("OUTAGE_CAUSE")
+        est_restoration_time_ms = outage_attributes.get("CURRENT_ETOR")
+        outage_geometry = outage.get("geometry", {})
+        x = outage_geometry.get("x")
+        y = outage_geometry.get("y")
+        
+        # Convert from EPSG:3857 (Web Mercator) to EPSG:4326 (WGS84 lat/long)
+        # TODO: consider doing this on the larger dataframe so it's more natural/efficient
+        if x is not None and y is not None:
+            # Create a GeoDataFrame with the point in EPSG:3857
+            point_gdf = gpd.GeoDataFrame([1], geometry=[gpd.points_from_xy([x], [y])[0]], crs='EPSG:3857')
+            # Transform to EPSG:4326 (WGS84)
+            point_gdf = point_gdf.to_crs('EPSG:4326')
+            # Extract the transformed coordinates
+            lon = point_gdf.geometry.x.iloc[0]
+            lat = point_gdf.geometry.y.iloc[0]
+            print(f"before EPSG conversion: {x}, {y}")
+            print(f"after EPSG conversion: {lon}, {lat}")
+        else:
+            lat = None
+            lon = None
 
         # Skip outages with missing essential data
         # TODO: add log levels and logging that's saved to the end
         if not outage_id or not start_time_ms or lat is None or lon is None:
             print(f"ALERT: skipping outage {outage_id} because it is missing essential data")
+            print(f"outage properties: {outage_attributes}")
             continue
 
         # Convert epoch milliseconds to datetime
@@ -446,16 +467,26 @@ def calculate_expected_length_minutes(update_time, est_restoration_time):
             return None
         
         # Convert to datetime if they're strings
+        # temporarily handle the none case. But long term, these shouldn't be strings
+        # TODO: make them datetime objects
         if isinstance(update_time, str):
-            update_time = pd.to_datetime(update_time)
+            if update_time == "none":
+                return None
+            else:
+                update_time = pd.to_datetime(update_time)
         if isinstance(est_restoration_time, str):
-            est_restoration_time = pd.to_datetime(est_restoration_time)
+            if est_restoration_time == "none":
+                return None
+            else:
+                est_restoration_time = pd.to_datetime(est_restoration_time)
         
         # Calculate difference in minutes
         time_diff = est_restoration_time - update_time
         return int(time_diff.total_seconds() / 60)
     except Exception as e:
-        print(f"Error calculating expected length: {e.message}")
+        print(f"Error calculating expected length: {e}")
+        print(f"   update_time: {update_time}")
+        print(f"   est_restoration_time: {est_restoration_time}")
         return None
 
 def calculate_active_duration_minutes(start_time, current_time):
@@ -549,6 +580,8 @@ def reverse_geocode(lat, lon, api_key=None):
             return maps_url
 
         response = requests.get(url)
+        # sleep for 1 second to avoid rate limiting
+        time.sleep(1)
         response.raise_for_status()
         
         data = response.json()
