@@ -58,9 +58,11 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
                 
                 # Add estimated duration if available
                 if pd.notna(outage['expected_length_minutes']) and outage['expected_length_minutes'] is not None:
-                    expected_hours = outage['expected_length_minutes'] / 60
-                    new_message += f"Expected Duration: {expected_hours:.1f}h \n"
-                
+                    expected_hours_string = f"{outage['expected_length_minutes'] / 60:.1f}h"
+                else:
+                    expected_hours_string = "Unknown"
+
+                new_message += f"Expected Duration: {expected_hours_string} \n"
                 new_message += f"Status: {outage['status']}\n"
                 new_message += f"Cause: {outage['cause']}\n"
                 
