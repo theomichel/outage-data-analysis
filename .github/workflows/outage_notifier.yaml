@@ -130,3 +130,23 @@ jobs:
         continue-on-error: true
         run: |
           python outage_notifier.py -d output_files -r 4 -c 100 -lc 1000 -e .25 -u snopud --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1002452542176" --telegram-thread-id "4789" --geocode-api-key "${GEOCODE_API_KEY}"
+
+      - name: Run PG&E expand
+        continue-on-error: true
+        run: |
+          git pull origin main
+          python -u expand.py -r ../pge-outages -i last_file_pge_test.txt -o output_files -l 10 ../pge-outages/pge-events.json
+
+      - name: Save PG&E progress if succeeded
+        continue-on-error: true
+        if: success()
+        run: |
+          git pull origin main
+          git add last_file_pge_test.txt
+          git commit -m "updating file to track latest processed commit for PG&E"
+          git push -u origin main
+
+      - name: Run PG&E notify
+        continue-on-error: true
+        run: |
+          python outage_notifier.py -d output_files -r 4 -c 100 -lc 1000 -e .25 -u pge --telegram-token "${PWRONDATABOT_TOKEN}" --telegram-chat-id "-1002452542176" --telegram-thread-id "4789" --geocode-api-key "${GEOCODE_API_KEY}" -zw "./constant_data/bay_area_zip_codes.txt" -zb "./constant_data/ca_california_zip_codes_geo.min.json"
