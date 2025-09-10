@@ -78,7 +78,7 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
                     location_info = outage_utils.reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
                     new_message += f"Location: {location_info}\n"
 
-                new_message += f"{current_time.astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d %H:%M:%S')}\n"
+                new_message += f"{current_time.astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d %H:%M %Z')}\n"
                 
                 messages_to_send.append(('new', new_message, outage['outage_id']))
 
@@ -106,7 +106,7 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
                     location_info = outage_utils.reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
                     new_message += f"Location: {location_info}\n"
 
-                new_message += f"{current_time.astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d %H:%M:%S')}\n"
+                new_message += f"{current_time.astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d %H:%M %Z')}\n"
                     
                 messages_to_send.append(('active', new_message, outage['outage_id']))
 
@@ -130,7 +130,7 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
                     location_info = outage_utils.reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
                     resolved_message += f"Location: {location_info}\n"
                 
-                resolved_message += f"{current_time.astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d %H:%M:%S %Z')}\n"
+                resolved_message += f"{current_time.astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d %H:%M %Z')}\n"
                 
                 messages_to_send.append(('resolved', resolved_message, outage['outage_id']))
         
