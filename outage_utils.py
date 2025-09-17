@@ -588,6 +588,7 @@ def reverse_geocode(lat, lon, api_key=None):
         
         suburb = address.get('suburb', '')
         city = address.get('city', '') or address.get('town', '')
+        county = address.get('county', '')
         state = address.get('state', '')
         
         # Convert state to abbreviation if available (case-insensitive)
@@ -598,6 +599,8 @@ def reverse_geocode(lat, lon, api_key=None):
             location_info = f"[{suburb}, {city}, {state_abbr}]({maps_url})"
         elif city and state_abbr:
             location_info = f"[{city}, {state_abbr}]({maps_url})"
+        elif county and state_abbr:
+            location_info = f"[{county}, {state_abbr}]({maps_url})"
         elif state_abbr:
             location_info = f"[{state_abbr}]({maps_url})"
         else:

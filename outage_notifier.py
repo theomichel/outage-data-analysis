@@ -9,6 +9,13 @@ import sys
 import outage_utils
 import glob
 import zip_utils
+import pytz
+
+def get_utility_display_name(utility):
+    if utility == "pge":
+        return "PG&E"
+    else:
+        return utility.upper()
 
 def send_telegram_message(token, chat_id, message, thread_id=None):
     """Sends a message to a specified Telegram chat."""
@@ -43,6 +50,7 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
         resolved_outages = notification_data['resolved_outages']
         active_outages = notification_data['active_outages']
         messages_to_send = []
+        current_time = datetime.now(pytz.timezone('GMT'))
         
         # Create individual notification for each new outage
         if not new_outages.empty:
@@ -50,11 +58,9 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
                 
                 elapsed_hours = outage['elapsed_time_minutes'] / 60
                 
-                new_message = f"🚨 NEW OUTAGE ALERT 🚨\n\n"
-                new_message += f"Utility: {outage['utility'].upper()}\n"
-                new_message += f"ID: {outage['outage_id']}\n"
+                new_message = f"🚨 NEW OUTAGE 🚨\n\n"
+                new_message += f"Utility/ID: {get_utility_display_name(outage['utility'])} / {outage['outage_id']}\n"
                 new_message += f"Customers: {outage['customers_impacted']:,.0f} \n"
-                new_message += f"Current Duration: {elapsed_hours:.1f}h \n"
                 
                 # Add estimated duration if available
                 if pd.notna(outage['expected_length_minutes']) and outage['expected_length_minutes'] is not None:
@@ -62,7 +68,8 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
                 else:
                     expected_hours_string = "Unknown"
 
-                new_message += f"Expected Duration: {expected_hours_string} \n"
+                new_message += f"Elapsed / Remaining Time: {elapsed_hours:.1f}h / {expected_hours_string} \n"
+
                 new_message += f"Status: {outage['status']}\n"
                 new_message += f"Cause: {outage['cause']}\n"
                 
@@ -70,6 +77,8 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
                 if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
                     location_info = outage_utils.reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
                     new_message += f"Location: {location_info}\n"
+
+                new_message += f"{current_time.astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d %H:%M %Z')}\n"
                 
                 messages_to_send.append(('new', new_message, outage['outage_id']))
 
@@ -78,45 +87,50 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
                 
                 elapsed_hours = outage['elapsed_time_minutes'] / 60
                 
-                new_message = f"🚨 ESCALATED OUTAGE ALERT 🚨\n\n"
-                new_message += f"Utility: {outage['utility'].upper()}\n"
-                new_message += f"ID: {outage['outage_id']}\n"
+                new_message = f"🚨 ESCALATED OUTAGE 🚨\n\n"
+                new_message += f"Utility/ID: {get_utility_display_name(outage['utility'])} / {outage['outage_id']}\n"
                 new_message += f"Customers: {outage['customers_impacted']:,.0f} \n"
-                new_message += f"Current Duration: {elapsed_hours:.1f}h \n"
                 
                 # Add estimated duration if available
                 if pd.notna(outage['expected_length_minutes']) and outage['expected_length_minutes'] is not None:
-                    expected_hours = outage['expected_length_minutes'] / 60
-                    new_message += f"Expected Duration: {expected_hours:.1f}h \n"
-                
+                    expected_hours_string = f"{outage['expected_length_minutes'] / 60:.1f}h"
+                else:
+                    expected_hours_string = "Unknown"
+
+                new_message += f"Elapsed / Remaining Time: {elapsed_hours:.1f}h / {expected_hours_string} \n"
                 new_message += f"Status: {outage['status']}\n"
                 new_message += f"Cause: {outage['cause']}\n"
-                
+
                 # Add location if available
                 if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
                     location_info = outage_utils.reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
                     new_message += f"Location: {location_info}\n"
-                
+
+                new_message += f"{current_time.astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d %H:%M %Z')}\n"
+                    
                 messages_to_send.append(('active', new_message, outage['outage_id']))
 
 
         # Create individual notification for each resolved outage  
         if not resolved_outages.empty:
             for _, outage in resolved_outages.iterrows():
-                resolved_message = f"😌 RESOLVED OUTAGE ALERT 😌\n\n"
-                resolved_message += f"Utility: {outage['utility'].upper()}\n"
-                resolved_message += f"ID: {outage['outage_id']}\n"
+                resolved_message = f"😌 RESOLVED OUTAGE 😌\n\n"
+                resolved_message += f"Utility/ID: {get_utility_display_name(outage['utility'])} / {outage['outage_id']}\n"
                 resolved_message += f"Customers: {outage['customers_impacted']:,.0f}\n"
                 
                 # Add actual duration if available
                 if pd.notna(outage['elapsed_time_minutes']) and outage['elapsed_time_minutes'] is not None:
                     actual_hours = outage['elapsed_time_minutes'] / 60
                     resolved_message += f"Actual Duration: {actual_hours:.1f}h\n"
+
+                resolved_message += f"Cause: {outage['cause']}\n"
                 
                 # Add location if available
                 if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
                     location_info = outage_utils.reverse_geocode(outage['center_lat'], outage['center_lon'], geocode_api_key)
                     resolved_message += f"Location: {location_info}\n"
+                
+                resolved_message += f"{current_time.astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d %H:%M %Z')}\n"
                 
                 messages_to_send.append(('resolved', resolved_message, outage['outage_id']))
         
