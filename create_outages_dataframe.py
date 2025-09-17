@@ -9,6 +9,7 @@ from dateutil.parser import parse as parse_dt
 from pykml import parser
 import math
 import logging 
+import outage_utils
 
 
 OUTPUT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -139,303 +140,6 @@ def smallest_enclosing_circle(array_of_arrays_of_points):
                                 c = c3
     return c
 
-def parse_pse_file(input_file, rows, file_datetime, is_from_most_recent=True):
-    pse_local_timeformat = "%Y/%m/%d %I:%M %p" # e.g. "2025/02/24 06:30 PM"
-
-    try:
-        data = json.load(input_file)
-    except Exception as e:
-        print(f"error parsing pse file: {input_file}. Defaulting to empty list. Exception: {e}")
-        data = []
-        return
-
-    for outage in data.get("PseMap", []):
-        provider = outage.get("DataProvider", {})
-        attributes = provider.get("Attributes", [])
-
-        # PSE has a few different attribute names for outage id, so we have to check for all of them
-        outage_id = get_attr(attributes, "OutageEventId")
-        if(not outage_id):
-            outage_id = get_attr(attributes, "Outage ID")
-        if(not outage_id):
-            outage_id = get_attr(attributes, "Outage ID:")
-        if(not outage_id):
-            # for a while, PSE used a blank attribute name for outage id
-            outage_id = get_attr(attributes, "")
-        if(not outage_id or not outage_id.startswith("INC")):
-            print(f"outage id '{outage_id}' missing or does not start with INC, skipping")
-            # TODO: decide on a consistent way to handle these types of things. Ignore the outage, ignore the file, neither?
-            continue
-
-        start_time_json = get_attr(attributes, "StartDate")
-
-        # pse changed the attribute name when introducing the refname field, so we have to 
-        # check for both names for start time, est restoration time, and last updated
-        if(not start_time_json):
-            start_time_json = get_attr(attributes, "Start time")
-        # PSE omits the year from the start time, and strptime is threatening to not support that in future
-        # so we'll just use the file's year if the datetime string is short enough that it couldn't have the year
-        # (in case PSE adds the year later) 
-        if(len(start_time_json) <= 14):
-            start_time_json = str(file_datetime.year) + "/" + start_time_json # e.g. "01/15 08:00 AM" -> "2025/01/15 08:00 AM"
-
-        start_time = datetime.strptime(start_time_json, pse_local_timeformat)
-
-        est_restoration_time_json = get_attr(attributes, "Est. Restoration time")
-        if(not est_restoration_time_json):
-            est_restoration_time_json = get_attr(attributes, "Est. restoration time")
-
-        try:
-            if(len(est_restoration_time_json) <= 14):
-                est_restoration_time_json = str(file_datetime.year) + "/" + est_restoration_time_json # e.g. "01/15 08:00 AM" -> "2025/01/15 08:00 AM
-            est_restoration_time = datetime.strptime(est_restoration_time_json, pse_local_timeformat)
-        except Exception as e:    
-            print(f"error parsing est restoration time: {est_restoration_time_json}. Exception: {e}Defaulting to None")
-            est_restoration_time = None
-
-        customers_impacted = get_attr(attributes, "Customers impacted")
-        status = get_attr(attributes, "Status")
-        cause = get_attr(attributes, "Cause")
-        json_polygon = outage.get("Polygon", [])
-
-        # PSE appears to always use a single polygon for each outage
-        polygons = []
-        polygons.append([])
-        for point in json_polygon:
-            polygons[0].append([point.get("Longitude"), point.get("Latitude")])
-        center_lon, center_lat, radius = smallest_enclosing_circle(polygons)
-        
-        row = {
-            "utility": "pse",
-            "outage_id": outage_id,
-            "file_datetime": file_datetime.strftime(OUTPUT_TIME_FORMAT),
-            "start_time": local_timezone.localize(start_time).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
-            "customers_impacted": customers_impacted,
-            "status": status,
-            "cause": cause,
-            "est_restoration_time": "none" if est_restoration_time is None else local_timezone.localize(est_restoration_time).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
-            "polygon_json": json.dumps(polygons),
-            "center_lon": center_lon,
-            "center_lat": center_lat,
-            "radius": radius,
-            "isFromMostRecent": is_from_most_recent
-        }
-        rows.append(row)
-
-
-def parse_scl_file(input_file, rows, file_datetime, is_from_most_recent=True):
-    data = json.load(input_file)
-
-    for outage in data:
-        outage_id = outage.get("id")
-        start_time = outage.get("startTime")
-        customers_impacted = outage.get("numPeople")
-        status = outage.get("status")
-        cause = outage.get("cause")
-        est_restoration_time = outage.get("etrTime")
-        rings = outage.get("polygons", {}).get("rings", [])
-
-        # SCL appears to sometimes use multiple polygons (rings) for each outage. 
-        # I believe "ring" is a polygon that doesn't have any holes
-        polygons = rings
-        center_lon, center_lat, radius = smallest_enclosing_circle(polygons)
-
-        row = {
-            "utility": "scl",
-            "outage_id": outage_id,
-            "file_datetime": file_datetime,
-            # SCL times are in PST as epoch time, so they need to be converted to UTC
-            "start_time": local_timezone.localize(datetime.fromtimestamp(start_time/1000)).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
-            "customers_impacted": customers_impacted,
-            "status": status,
-            "cause": cause,
-            "est_restoration_time": local_timezone.localize(datetime.fromtimestamp(est_restoration_time/1000)).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
-            "polygon_json": json.dumps(polygons),
-            "center_lon": center_lon,
-            "center_lat": center_lat,
-            "radius": radius,
-            "isFromMostRecent": is_from_most_recent
-        }
-        rows.append(row)
-
-def parse_snopud_file(input_file, rows, file_datetime, is_from_most_recent=True):
-    try:
-        root = parser.parse(input_file).getroot()
-    except Exception as e:
-        if "Document is empty" in str(e):
-            print(f"Empty XML document detected, skipping file.")
-            return
-        else:
-            # Re-raise other exceptions to see what's actually going wrong
-            raise e
-    
-    # Collect all placemark data into a list for DataFrame creation
-    placemark_data = []
-    
-    for pm in root.Document.Folder.Placemark:
-        # first get the raw data from the file
-        start_time = find_element_in_kml_extended_data(pm.ExtendedData, "StartUTC")
-        customers_impacted = find_element_in_kml_extended_data(pm.ExtendedData, "EstCustomersOut")
-        status = find_element_in_kml_extended_data(pm.ExtendedData, "OutageStatus")
-        cause = find_element_in_kml_extended_data(pm.ExtendedData, "Cause")
-        est_restoration_time = find_element_in_kml_extended_data(pm.ExtendedData, "EstimatedRestorationUTC")
-        polygon = pm.Polygon.outerBoundaryIs.LinearRing.coordinates
-
-        # snopud sometimes leaves entries with -1 for customers impacted and invalid dates and other fields
-        # I assume this either means they're still investigating, or they're just using placeholder data for some 
-        # other reason. We'll just skip them
-        if customers_impacted == -1:
-            print(f"skipping outage {pm.name} because it has -1 for customers impacted")
-            continue
-
-        # Parse start time for grouping
-        start_time_parsed = datetime.fromisoformat(start_time.text).replace(tzinfo=None)
-        
-        # Parse polygon coordinates
-        polygon_points = parse_kml_coordinate_string(polygon.text if hasattr(polygon, 'text') else str(polygon))
-        
-        placemark_data.append({
-            'placemark_name': pm.name,
-            'start_time_parsed': start_time_parsed,
-            'start_time_key': start_time_parsed.strftime("%Y%m%d%H%M%S"),
-            'customers_impacted': int(customers_impacted),
-            'status': status,
-            'cause': cause,
-            'est_restoration_time': est_restoration_time,
-            'polygon_points': polygon_points
-        })
-    
-    if not placemark_data:
-        return
-    
-    # Convert to DataFrame and group by start time
-    df = pd.DataFrame(placemark_data)
-    
-    # Group by start time and aggregate
-    grouped = df.groupby('start_time_key').agg({
-        'placemark_name': 'first',  # Use first name for outage ID
-        'start_time_parsed': 'first',  # All should be the same
-        'customers_impacted': 'sum',  # Sum customers across all placemarks
-        'status': 'first',  # Should be same for all
-        'cause': 'first',   # Should be same for all
-        'est_restoration_time': 'first',  # Should be same for all
-        'polygon_points': lambda x: list(x)  # Collect all polygons
-    }).reset_index()
-    
-    # Process each group to create combined outages
-    for _, row in grouped.iterrows():
-        # Create outage ID from the start time
-        outage_id = row['start_time_parsed'].strftime("%Y%m%d%H%M%S")
-        
-        # Get all polygons for this group
-        all_polygons = row['polygon_points']
-        
-        # Compute smallest enclosing circle for all polygons combined
-        center_lon, center_lat, radius = smallest_enclosing_circle(all_polygons)
-        
-        # Handle restoration time
-        try:
-            est_restoration_time_string = datetime.fromisoformat(row['est_restoration_time'].text).replace(tzinfo=None).strftime(OUTPUT_TIME_FORMAT)
-            logging.info(f"est restoration time: {est_restoration_time_string}")
-        except Exception as e:    
-            print(f"error parsing est restoration time: {row['est_restoration_time'].text}. Exception: {e}. \n Defaulting to None")
-            est_restoration_time_string = "None"
-        
-        # Log combination info if multiple placemarks
-        if len(all_polygons) > 1:
-            print(f"Combining {len(all_polygons)} placemarks with start time {row['start_time_key']}")
-        
-        row_data = {
-            "utility": "snopud",
-            "outage_id": outage_id,
-            "file_datetime": file_datetime.strftime(OUTPUT_TIME_FORMAT),
-            "start_time": row['start_time_parsed'].strftime(OUTPUT_TIME_FORMAT),
-            "customers_impacted": row['customers_impacted'],
-            "status": row['status'],
-            "cause": row['cause'],
-            "est_restoration_time": est_restoration_time_string,
-            "polygon_json": json.dumps(all_polygons),
-            "center_lon": center_lon,
-            "center_lat": center_lat,
-            "radius": radius,
-            "isFromMostRecent": is_from_most_recent
-        }
-        rows.append(row_data)
-
-def parse_pge_file(input_file, rows, file_datetime, is_from_most_recent=True):
-    """Parse PG&E outage data from JSON files.
-    
-    PG&E data contains point coordinates rather than polygons, so we create a small
-    circular polygon around each point for consistency with other utilities.
-    """
-    try:
-        data = json.load(input_file)
-    except Exception as e:
-        print(f"error parsing pge file: {input_file}. Defaulting to empty list. Exception: {e}")
-        data = []
-
-    for outage in data:
-        outage_id = outage.get("F_OUTAGE_ID")
-        start_time_ms = outage.get("OUTAGE_START")
-        customers_impacted = outage.get("EST_CUSTOMERS", 0)
-        status = outage.get("CREW_CURRENT_STATUS")
-        cause = outage.get("OUTAGE_CAUSE")
-        est_restoration_time_ms = outage.get("CURRENT_ETOR")
-        lat = outage.get("OUTAGE_LATITUDE")
-        lon = outage.get("OUTAGE_LONGITUDE")
-
-        # Skip outages with missing essential data
-        # TODO: add log levels and logging that's saved to the end
-        if not outage_id or not start_time_ms or lat is None or lon is None:
-            print(f"ALERT: skipping outage {outage_id} because it is missing essential data")
-            continue
-
-        # Convert epoch milliseconds to datetime
-        # TODO: I believe this is in PST, so we need to convert to UTC, but need to check before making changes
-        start_time = datetime.fromtimestamp(start_time_ms / 1000)
-        est_restoration_time = None
-        if est_restoration_time_ms:
-            est_restoration_time = datetime.fromtimestamp(est_restoration_time_ms / 1000)
-
-        # Create a small circular polygon around the point coordinates
-        # Use a radius of approximately 0.001 degrees (roughly 100 meters)
-        # TODO: do we really need this? Or just have polygon-less outages?
-        radius_degrees = 0.001
-        num_points = 8  # Create an 8-sided polygon
-        
-        polygon_points = []
-        for i in range(num_points):
-            angle = 2 * math.pi * i / num_points
-            delta_lon = radius_degrees * math.cos(angle)
-            delta_lat = radius_degrees * math.sin(angle)
-            polygon_points.append([lon + delta_lon, lat + delta_lat])
-        
-        # Close the polygon by adding the first point again
-        polygon_points.append(polygon_points[0])
-        
-        polygons = [polygon_points]
-        center_lon = lon
-        center_lat = lat
-        radius = .05 # a twentieth of a mile, very roughly the same 100 meters as our fake polygon
-
-        row = {
-            "utility": "pge",
-            "outage_id": outage_id,
-            "file_datetime": file_datetime.strftime(OUTPUT_TIME_FORMAT),
-            "start_time": local_timezone.localize(start_time).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
-            "customers_impacted": customers_impacted,
-            "status": status,
-            "cause": cause,
-            "est_restoration_time": "none" if est_restoration_time is None else local_timezone.localize(est_restoration_time).astimezone(pytz.utc).strftime(OUTPUT_TIME_FORMAT),
-            "polygon_json": json.dumps(polygons),
-            "center_lon": center_lon,
-            "center_lat": center_lat,
-            "radius": radius,
-            "isFromMostRecent": is_from_most_recent
-        }
-        rows.append(row)
-
-
 def main():
     parser = argparse.ArgumentParser(description="Collect PSE outage updates from JSON files into a CSV. Can also be run on a single file. Assumes that input file names start with the date that the file was created, in %Y-%m-%dT%H%M%S%f form.")
     parser.add_argument('-d', '--directory', type=str, default='.', help='Directory containing files that match the pattern')
@@ -461,7 +165,7 @@ def main():
     elif (args.utility == "snopud"):
         filename_suffix = "-KMLOutageAreas.xml"
     elif (args.utility == "pge"):
-        filename_suffix = "-outages.json"
+        filename_suffix = "-pge-events.json"
 
     # pattern used to find all the files
     if (args.singlefile):
@@ -504,13 +208,13 @@ def main():
 
         with open(file, "r", encoding="utf-8") as f:
             if(args.utility == "pse"):
-                parse_pse_file(f, rows, gmt_file_datetime, is_from_most_recent)
+                outage_utils.parse_pse_file(f, rows, gmt_file_datetime, is_from_most_recent)
             elif (args.utility == "scl"):
-                parse_scl_file(f, rows, gmt_file_datetime, is_from_most_recent)
+                outage_utils.parse_scl_file(f, rows, gmt_file_datetime, is_from_most_recent)
             elif (args.utility == "snopud"):
-                parse_snopud_file(f, rows, gmt_file_datetime, is_from_most_recent)
+                outage_utils.parse_snopud_file(f, rows, gmt_file_datetime, is_from_most_recent)
             elif (args.utility == "pge"):
-                parse_pge_file(f, rows, gmt_file_datetime, is_from_most_recent)
+                outage_utils.parse_pge_file(f, rows, gmt_file_datetime, is_from_most_recent)
             else:
                 print("no utility specified, will not parse")
 

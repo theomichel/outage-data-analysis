@@ -32,26 +32,6 @@ DEFAULT_ZIP_POPULATION_FILE = os.path.join(os.path.dirname(__file__), 'constant_
 def has_changes(series):
     return series.nunique() > 1
 
-def parse_datetime(date_str, time_str):
-    # Assumes file_date is YYYY-MM-DD and file_time is HH:MM:SS
-    try:
-        return pd.to_datetime(f"{date_str} {time_str}")
-    except Exception:
-        return pd.NaT
-
-def parse_est_restoration_time(time_str):
-    # Try to parse various formats, fallback to NaT
-    # Example format: '08/06 02:00 PM' (MM/DD HH:MM AM/PM)
-    try:
-        # Try with current year
-        return pd.to_datetime(f"2024/{time_str}", format="%Y/%m/%d %I:%M %p")
-    except Exception:
-        try:
-            # Try without year, let pandas infer
-            return pd.to_datetime(time_str)
-        except Exception:
-            return pd.NaT
-
 def format_timedelta_hhmm(td):
     if pd.isnull(td):
         return ""
@@ -124,7 +104,7 @@ def load_zip_codes(zip_file_path=None):
             return None
             
         try:
-            print("Loading Washington zip code boundaries...")
+            print(f"Loading zip code boundaries from {zip_file_path}")
             _zip_geo_df = gpd.read_file(zip_file_path)
             print(f"Loaded {len(_zip_geo_df)} zip code boundaries")
             return _zip_geo_df
@@ -1166,6 +1146,9 @@ def main():
     # Ensure grouping preserves the sorted order above so first/last valid are chronological
     filtered_df = filtered_df.sort_values(["outage_id", "file_datetime"]) 
 
+    # First, get the index of the row with max customers_impacted for each group
+    max_customers_idx = filtered_df.groupby(["utility","outage_id"])['customers_impacted'].idxmax()
+    
     summary = (
         filtered_df.groupby(["utility","outage_id"], sort=False)
         .agg(
@@ -1178,11 +1161,13 @@ def main():
             last_polygon_json=("polygon_json", "last"),
             last_start_time=("start_time", "last"),
             max_customers_impacted=("customers_impacted", "max"),
-            center_lon=("center_lon", "last"),
-            center_lat=("center_lat", "last"),
         )
         .reset_index()
     )
+    
+    # Add center coordinates from the row with max customers impacted
+    summary['center_lon'] = filtered_df.loc[max_customers_idx, 'center_lon'].values
+    summary['center_lat'] = filtered_df.loc[max_customers_idx, 'center_lat'].values
     
     print(f"last_file_datetime: {summary['last_file_datetime']}")
 
