@@ -151,6 +151,24 @@
    }
   },
   {
+    "attributes": {
+     "OUTAGE_ID": 9179,
+     "CURRENT_ETOR": null,
+     "OUTAGE_START": 1756501600000,
+     "EST_CUSTOMERS": 1000,
+     "OUTAGE_CAUSE": "FIRE",
+     "CREW_CURRENT_STATUS": "Awaiting T-Man",
+     "LAST_UPDATE": 1756501728000,
+     "OUTAGE_START_TEXT": "2025-08-29T21:06:47Z",
+     "LAST_UPDATE_TEXT": "2025-08-29T21:08:48Z",
+     "CURRENT_ETOR_TEXT": "2025-08-30T00:23:27Z"
+    },
+    "geometry": {
+     "x": -13519510.6351,
+     "y": 4443885.8883000016
+    }
+   },
+   {
    "attributes": {
     "OUTAGE_ID": 9217,
     "CURRENT_ETOR": 1756510600000,
