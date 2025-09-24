@@ -398,8 +398,8 @@ def parse_pge_file(input_file, rows, file_datetime, is_from_most_recent=True):
             # Extract the transformed coordinates
             lon = point_gdf.geometry.x.iloc[0]
             lat = point_gdf.geometry.y.iloc[0]
-            print(f"before EPSG conversion: {x}, {y}")
-            print(f"after EPSG conversion: {lon}, {lat}")
+            # print(f"before EPSG conversion: {x}, {y}")
+            # print(f"after EPSG conversion: {lon}, {lat}")
         else:
             lat = None
             lon = None

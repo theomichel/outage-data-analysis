@@ -108,7 +108,7 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
 
                 new_message += f"{current_time.astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d %H:%M %Z')}\n"
                     
-                messages_to_send.append(('active', new_message, outage['outage_id']))
+                messages_to_send.append(('escalated', new_message, outage['outage_id']))
 
 
         # Create individual notification for each resolved outage  
@@ -379,14 +379,12 @@ def main():
                         )
                     ) |
                     (
-                        # then check for escalation of an outage from normal to large
+                        # then check for escalation of an existing non-large outage to large, regardless of whether it was notifiable previously
                         (
-                            (active_merged['customers_impacted_current'] >= args.large_outage_customer_threshold) &
-                            (~pd.isna(active_merged['expected_length_minutes_current']) & (active_merged['expected_length_minutes_current'] >= expected_length_threshold_minutes))
+                            (active_merged['customers_impacted_current'] >= args.large_outage_customer_threshold)
                         ) &
                         (
-                            (active_merged['customers_impacted_previous'] < args.large_outage_customer_threshold) |
-                            (pd.isna(active_merged['expected_length_minutes_previous']) | (active_merged['expected_length_minutes_previous'] < expected_length_threshold_minutes))
+                            (active_merged['customers_impacted_previous'] < args.large_outage_customer_threshold)
                         )
                     )
                 )
