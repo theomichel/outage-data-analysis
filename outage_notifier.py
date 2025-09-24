@@ -338,17 +338,13 @@ def main():
                 (new_outages['customers_impacted'] >= args.large_outage_customer_threshold))
             ]
 
-        print(f"resolved_outages:")
-        print_dataframe_pretty(resolved_outages)
-        print(f"customers_impacted threshold: {args.customer_threshold}")
-        print(f"expected_length_threshold: {expected_length_threshold_minutes}")
-
         notifiable_resolved_outages = pd.DataFrame()
         if not resolved_outages.empty:
             notifiable_resolved_outages = resolved_outages[
                 ((resolved_outages['customers_impacted'] >= args.customer_threshold) &
                 (resolved_outages['expected_length_minutes'] >= expected_length_threshold_minutes) &
-                (resolved_outages['elapsed_time_minutes'] >= elapsed_time_threshold_minutes))
+                (resolved_outages['elapsed_time_minutes'] >= elapsed_time_threshold_minutes)) |
+                (resolved_outages['customers_impacted'] >= args.large_outage_customer_threshold)
             ]
 
         # Check active outages (outages that exist in both previous and current files)

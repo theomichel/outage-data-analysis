@@ -7,7 +7,8 @@ Notifications you should see:
 
 8859 - new notifiable normal outage: in current file, not in previous file
 8975 - new notifiable large outage: in current file, not in previous file
-9112 - resolved outage: not in current file, in previous file
+9112 - resolved normal outage: not in current file, in previous file
+9113 - resolved large outage with short time estimate: not in current file, in previous file 
 9119 - escalated small > 4 hours resolution to > 100 > 4 hours resolution
 9142 - escalated normal to large < 4 hours resolution
 9178 - escalated large close resolution to large > 4 hours resolution
@@ -39,6 +40,7 @@ outage_id  customers_impacted  expected_length_minutes  elapsed_time_minutes
 summary of outages in the "previous" file (tests\notifier_test_files\2025-08-29T224647-pge-events.json):
 outage_id  customers_impacted  expected_length_minutes  elapsed_time_minutes
 9112                 160                      500                   100
+9113                1000                       50                   100
 9119                   2                      500                   100
 9142                 100                      500                   100
 9178                1000                       50                   100

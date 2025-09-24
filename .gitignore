@@ -100,6 +100,7 @@ dmypy.json
 output_files/
 output_files2
 pse_test_files/
+pge_output/
 
 # Test output directories
 test_output*/
