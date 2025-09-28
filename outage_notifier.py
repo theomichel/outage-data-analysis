@@ -17,6 +17,21 @@ def get_utility_display_name(utility):
     else:
         return utility.upper()
 
+def escape_markdown(text):
+    """Escape special Markdown characters to prevent parsing issues."""
+    if pd.isna(text) or text is None:
+        return ""
+    
+    # Convert to string and escape special Markdown characters
+    text = str(text)
+    # Escape backticks, asterisks, underscores, brackets, parentheses, and other special chars
+    text = text.replace('\\', '\\\\')  # Escape backslashes first
+    text = text.replace('`', '\\`')    # Escape backticks
+    text = text.replace('*', '\\*')    # Escape asterisks
+    text = text.replace('_', '\\_')    # Escape underscores
+    
+    return text
+
 def send_telegram_message(token, chat_id, message, thread_id=None):
     """Sends a message to a specified Telegram chat."""
     url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -31,13 +46,68 @@ def send_telegram_message(token, chat_id, message, thread_id=None):
 
     if thread_id:
         data["message_thread_id"] = thread_id
+    
     try:
         response = requests.post(url, json=data)
-        response.raise_for_status()  # Raise an exception for HTTP errors
+        
+        # Check for HTTP errors and log detailed response for 400 errors
+        if response.status_code == 400:
+            print(f"HTTP 400 Bad Request from Telegram API:")
+            print(f"  URL: {url}")
+            print(f"  Chat ID: {chat_id}")
+            print(f"  Thread ID: {thread_id}")
+            print(f"  Message length: {len(message)} characters")
+            print(f"  Message preview (first 200 chars): {message[:200]}...")
+            print(f"  Request data: {data}")
+            print(f"  Response status: {response.status_code}")
+            print(f"  Response headers: {dict(response.headers)}")
+            print(f"  Response body: {response.text}")
+            
+            # Try to parse the error response for more details
+            try:
+                error_data = response.json()
+                if 'description' in error_data:
+                    print(f"  Error description: {error_data['description']}")
+                if 'error_code' in error_data:
+                    print(f"  Error code: {error_data['error_code']}")
+                if 'parameters' in error_data:
+                    print(f"  Error parameters: {error_data['parameters']}")
+                
+                # Check for common Telegram API errors
+                description = error_data.get('description', '').lower()
+                if 'message is too long' in description:
+                    print(f"  → Message exceeds Telegram's 4096 character limit")
+                elif 'bad request: chat not found' in description:
+                    print(f"  → Chat ID {chat_id} not found or bot not added to chat")
+                elif 'bad request: message thread not found' in description:
+                    print(f"  → Thread ID {thread_id} not found in chat {chat_id}")
+                elif 'bad request: parse entities' in description:
+                    print(f"  → Markdown parsing error in message content")
+                elif 'bad request: message to edit not found' in description:
+                    print(f"  → Message to edit not found")
+                elif 'forbidden' in description:
+                    print(f"  → Bot doesn't have permission to send messages to this chat")
+                    
+            except:
+                print(f"  Could not parse error response as JSON")
+            
+            return False
+        
+        # For other HTTP errors, log basic info
+        elif not response.ok:
+            print(f"HTTP {response.status_code} error from Telegram API:")
+            print(f"  Response: {response.text}")
+            return False
+        
+        response.raise_for_status()  # This shouldn't trigger now, but keeping for safety
         print("Telegram message sent successfully!")
         return True
+        
     except requests.exceptions.RequestException as e:
-        print(f"Error sending Telegram message: {e}")
+        print(f"Network error sending Telegram message: {e}")
+        return False
+    except Exception as e:
+        print(f"Unexpected error sending Telegram message: {e}")
         return False
 
 def send_notification(notification_data, thresholds, bot_token=None, chat_id=None, thread_id=None, geocode_api_key=None, notification_output_dir="."):
@@ -100,6 +170,11 @@ def send_notification(notification_data, thresholds, bot_token=None, chat_id=Non
                 new_message += f"Elapsed / Remaining Time: {elapsed_hours:.1f}h / {expected_hours_string} \n"
                 new_message += f"Status: {outage['status']}\n"
                 new_message += f"Cause: {outage['cause']}\n"
+                
+                # Add escalation reason if available
+                if 'notification_reason' in outage and pd.notna(outage['notification_reason']):
+                    escaped_reason = escape_markdown(outage['notification_reason'])
+                    new_message += f"Reason: {escaped_reason}\n"
 
                 # Add location if available
                 if pd.notna(outage['center_lat']) and pd.notna(outage['center_lon']):
@@ -361,34 +436,60 @@ def main():
             )
             
             # Check which active outages meet thresholds now but didn't before
+            # Define the conditions for each type of notification
+            primary_thresholds_met = (
+                (active_merged['expected_length_minutes_current'] >= expected_length_threshold_minutes) &
+                (active_merged['customers_impacted_current'] >= args.customer_threshold) &
+                (active_merged['elapsed_time_minutes_current'] >= elapsed_time_threshold_minutes)
+            )
+            
+            primary_thresholds_not_met_previously = (
+                (pd.isna(active_merged['expected_length_minutes_previous']) | (active_merged['expected_length_minutes_previous'] < expected_length_threshold_minutes)) |
+                (pd.isna(active_merged['customers_impacted_previous']) | (active_merged['customers_impacted_previous'] < args.customer_threshold)) |
+                (pd.isna(active_merged['elapsed_time_minutes_previous']) | (active_merged['elapsed_time_minutes_previous'] < elapsed_time_threshold_minutes))
+            )
+            
+            large_outage_escalation = (
+                (active_merged['customers_impacted_current'] >= args.large_outage_customer_threshold) &
+                (active_merged['customers_impacted_previous'] < args.large_outage_customer_threshold)
+            )
+            
+            # Determine which outages are notifiable
             notifiable_active_outages = active_merged[
-                # for each class of threshold, check that it is met in the current data and not met in the previous data
-                (
-                    (
-                        # first check the primary outage thresholds e.g. > 100 customers and 4 hours
-                        # this also catches large outages that started with short restoration times and were extended
-                        (
-                            (active_merged['expected_length_minutes_current'] >= expected_length_threshold_minutes) &
-                            (active_merged['customers_impacted_current'] >= args.customer_threshold) &
-                            (active_merged['elapsed_time_minutes_current'] >= elapsed_time_threshold_minutes)
-                        ) &
-                        (
-                            (pd.isna(active_merged['expected_length_minutes_previous']) | (active_merged['expected_length_minutes_previous'] < expected_length_threshold_minutes)) |
-                            (pd.isna(active_merged['customers_impacted_previous']) | (active_merged['customers_impacted_previous'] < args.customer_threshold)) |
-                            (pd.isna(active_merged['elapsed_time_minutes_previous']) | (active_merged['elapsed_time_minutes_previous'] < elapsed_time_threshold_minutes))
-                        )
-                    ) |
-                    (
-                        # then check for escalation of an existing non-large outage to large, regardless of whether it was notifiable previously
-                        (
-                            (active_merged['customers_impacted_current'] >= args.large_outage_customer_threshold)
-                        ) &
-                        (
-                            (active_merged['customers_impacted_previous'] < args.large_outage_customer_threshold)
-                        )
-                    )
-                )
+                (primary_thresholds_met & primary_thresholds_not_met_previously) |
+                large_outage_escalation
             ]
+            
+            # Add "why" information for each notifiable outage
+            if not notifiable_active_outages.empty:
+                def determine_notification_reason(row):
+                    reasons = []
+                    
+                    # Check for primary threshold escalation
+                    if (primary_thresholds_met.loc[row.name] and 
+                        primary_thresholds_not_met_previously.loc[row.name]):
+                        
+                        # Determine which specific thresholds were newly exceeded
+                        if (pd.isna(row['expected_length_minutes_previous']) or 
+                            row['expected_length_minutes_previous'] < expected_length_threshold_minutes):
+                            reasons.append(f"expected_length ({row['expected_length_minutes_previous']:.0f}=>{row['expected_length_minutes_current']:.0f})")
+                        
+                        if (pd.isna(row['customers_impacted_previous']) or 
+                            row['customers_impacted_previous'] < args.customer_threshold):
+                            reasons.append(f"customers ({row['customers_impacted_previous']}=>{row['customers_impacted_current']})")
+                        
+                        if (pd.isna(row['elapsed_time_minutes_previous']) or 
+                            row['elapsed_time_minutes_previous'] < elapsed_time_threshold_minutes):
+                            reasons.append(f"elapsed_time ({row['elapsed_time_minutes_previous']:.0f}=>{row['elapsed_time_minutes_current']:.0f})")
+                    
+                    # Check for large outage escalation
+                    if large_outage_escalation.loc[row.name]:
+                        reasons.append(f"customers ({row['customers_impacted_previous']}=>{row['customers_impacted_current']})")
+                    
+                    return ", ".join(reasons) if reasons else "unknown reason"
+                
+                notifiable_active_outages = notifiable_active_outages.copy()
+                notifiable_active_outages['notification_reason'] = notifiable_active_outages.apply(determine_notification_reason, axis=1)
             
             # Rename columns to match expected format
             if not notifiable_active_outages.empty:
@@ -404,6 +505,12 @@ def main():
         print_dataframe_pretty(notifiable_resolved_outages)
         print(f"notifiable_active_outages:")
         print_dataframe_pretty(notifiable_active_outages)
+        
+        # Print notification reasons for active outages
+        if not notifiable_active_outages.empty and 'notification_reason' in notifiable_active_outages.columns:
+            print(f"Active outage notification reasons:")
+            for _, outage in notifiable_active_outages.iterrows():
+                print(f"  Outage {outage['outage_id']}: {outage['notification_reason']}")
 
         print(f"====== completed processing for file =======")
 
