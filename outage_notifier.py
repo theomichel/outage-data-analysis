@@ -472,7 +472,9 @@ def main():
                         # Determine which specific thresholds were newly exceeded
                         if (pd.isna(row['expected_length_minutes_previous']) or 
                             row['expected_length_minutes_previous'] < expected_length_threshold_minutes):
-                            reasons.append(f"expected_length ({row['expected_length_minutes_previous']:.0f}=>{row['expected_length_minutes_current']:.0f})")
+                            prev_expected = f"{row['expected_length_minutes_previous']/60:.1f}h" if pd.notna(row['expected_length_minutes_previous']) else "na"
+                            curr_expected = f"{row['expected_length_minutes_current']/60:.1f}h" if pd.notna(row['expected_length_minutes_current']) else "na"
+                            reasons.append(f"expected_length ({prev_expected}=>{curr_expected})")
                         
                         if (pd.isna(row['customers_impacted_previous']) or 
                             row['customers_impacted_previous'] < args.customer_threshold):
@@ -480,7 +482,9 @@ def main():
                         
                         if (pd.isna(row['elapsed_time_minutes_previous']) or 
                             row['elapsed_time_minutes_previous'] < elapsed_time_threshold_minutes):
-                            reasons.append(f"elapsed_time ({row['elapsed_time_minutes_previous']:.0f}=>{row['elapsed_time_minutes_current']:.0f})")
+                            prev_elapsed = f"{row['elapsed_time_minutes_previous']/60:.1f}h" if pd.notna(row['elapsed_time_minutes_previous']) else "na"
+                            curr_elapsed = f"{row['elapsed_time_minutes_current']/60:.1f}h" if pd.notna(row['elapsed_time_minutes_current']) else "na"
+                            reasons.append(f"elapsed_time ({prev_elapsed}=>{curr_elapsed})")
                     
                     # Check for large outage escalation
                     if large_outage_escalation.loc[row.name]:
