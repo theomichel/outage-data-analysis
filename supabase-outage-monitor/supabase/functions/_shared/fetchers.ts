@@ -12,7 +12,11 @@ const UTILITY_URLS = {
 };
 
 function formatDate(date: Date): string {
-  return date.toISOString().replace('T', ' ').substring(0, 19);
+  try {
+    return date.toISOString().replace('T', ' ').substring(0, 19);
+  } catch (e) {
+    return "na";
+  }
 }
 
 function getAttr(attributes: any[], attributeName: string): any {
