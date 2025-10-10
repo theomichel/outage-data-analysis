@@ -1,0 +1,16 @@
+outage_id,previous_customers_impacted,previous_expected_length_minutes,previous_elapsed_time_minutes,current_customers_impacted,current_expected_length_minutes,current_elapsed_time_minutes,notification_expected,why
+8859,,,,100,500,100,new,"new notifiable normal outage: in current file, not in previous file"
+8975,,,,1000,50,100,new,"new notifiable large outage: in current file, not in previous file"
+9112,160,500,100,,,,resolved,"resolved normal outage: not in current file, in previous file"
+9113,1000,50,100,,,,resolved,"resolved large outage with short time estimate: not in current file, in previous file"
+9119,2,500,100,100,500,100,escalated,escalated small > 4 hours resolution to > 100 > 4 hours resolution
+9120,2,7,9,100,500,100,escalated,escalating on three thresholds at the same time
+9142,1000,50,100,1000,500,100,escalated,escalated normal to large < 4 hours resolution
+9178,1000,unknown,100,1000,500,100,escalated,escalated large close resolution to large > 4 hours resolution
+9179,1000,50,10,1000,500,100,escalated,escalated large no null resolution to large > 4 hours resolution
+9217,1000,500,10,2000,50,10,none,"outage got bigger, but shouldn't re-notify"
+9233,100,500,99,1000,500,110,escalated,the outage got big!
+9234,,,,140,500,99,none,geo outside of bay area
+9235,,,,100,50,100,none,normal outage that doesn't meet the etor threshold
+9236,,,,99,500,100,none,outage that doesn't meet the size threshold 
+9237,,,,100,500,10,none,normal outage that doesn't meet the elapsed time threshold

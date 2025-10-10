@@ -1,0 +1,15 @@
+# Supabase
+.branches
+.temp
+.env
+
+# Deno
+.deno/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

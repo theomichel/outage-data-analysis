@@ -1,0 +1,25 @@
+{
+  "name": "outage-notifier-ts",
+  "version": "1.0.0",
+  "description": "TypeScript implementation of outage notification system",
+  "main": "dist/outage_notifier.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/outage_notifier.js"
+  },
+  "dependencies": {
+    "@turf/boolean-point-in-polygon": "^7.1.0",
+    "@turf/helpers": "^7.1.0",
+    "axios": "^1.7.9",
+    "fast-xml-parser": "^4.5.0",
+    "glob": "^11.0.0",
+    "proj4": "^2.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/proj4": "^2.5.5",
+    "supabase": "^2.48.3",
+    "typescript": "^5.7.2"
+  }
+}

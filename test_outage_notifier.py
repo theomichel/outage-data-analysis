@@ -15,6 +15,7 @@ import re
 from datetime import datetime
 import tempfile
 import shutil
+import argparse
 
 # ANSI color codes for terminal output
 class Colors:
@@ -44,12 +45,13 @@ def get_colors():
         return NoColors()
 
 
-def run_outage_notifier(test_dir, geocode_api_key, output_dir):
+def run_outage_notifier(test_dir, utility, geocode_api_key, output_dir):
     """
     Run the outage notifier with the specified parameters.
     
     Args:
         test_dir: Directory containing test JSON files
+        utility: Utility name (e.g., 'pge', 'pse', 'scl', 'snopud')
         geocode_api_key: Geocode API key (can be dummy for testing)
         output_dir: Directory to save notification files
     
@@ -60,7 +62,7 @@ def run_outage_notifier(test_dir, geocode_api_key, output_dir):
         sys.executable,  # Use the same Python interpreter
         "outage_notifier.py",
         "-d", test_dir,
-        "-u", "pge",
+        "-u", utility,
         "--geocode-api-key", geocode_api_key,
         "-zw", "./constant_data/bay_area_zip_codes.txt",
         "-zb", "./constant_data/ca_california_zip_codes_geo.min.json",
@@ -233,25 +235,42 @@ def main():
     print(f"{colors.BOLD}{colors.BLUE}Outage Notifier Test Script{colors.END}")
     print("="*50)
     
-    # Configuration - can be overridden by command line arguments
-    test_dir = "./tests/notifier_test_files"
-    expectations_file = "./tests/notifier_test_files/pge_outages_test_expectations.csv"
-    geocode_api_key = "dummy_geocode_key_for_testing"
-    
     # Parse command line arguments
-    if len(sys.argv) < 2:
-        print("Usage: python test_outage_notifier.py <geocode_api_key> [test_dir] [expectations_file]")
-        print("  geocode_api_key: Required - Geocode API key for testing")
-        print("  test_dir: Optional - Directory containing test JSON files (default: ./tests/notifier_test_files)")
-        print("  expectations_file: Optional - CSV file with test expectations (default: ./tests/notifier_test_files/pge_outages_test_expectations.csv)")
-        return 1
+    parser = argparse.ArgumentParser(
+        description="Test the outage notifier with test data and validate output against expectations."
+    )
+    parser.add_argument(
+        '-u', '--utility',
+        type=str,
+        required=True,
+        choices=['pge', 'pse', 'scl', 'snopud'],
+        help="Utility name (pge, pse, scl, or snopud)"
+    )
+    parser.add_argument(
+        '-k', '--geocode-api-key',
+        type=str,
+        required=True,
+        help="Geocode API key for testing"
+    )
+    parser.add_argument(
+        '-d', '--test-dir',
+        type=str,
+        default="./tests/notifier_test_files",
+        help="Directory containing test JSON files (default: ./tests/notifier_test_files)"
+    )
+    parser.add_argument(
+        '-e', '--expectations-file',
+        type=str,
+        default="./tests/notifier_test_files/pge_outages_test_expectations.csv",
+        help="CSV file with test expectations (default: ./tests/notifier_test_files/pge_outages_test_expectations.csv)"
+    )
     
-    geocode_api_key = sys.argv[1]
+    args = parser.parse_args()
     
-    if len(sys.argv) > 2:
-        test_dir = sys.argv[2]
-    if len(sys.argv) > 3:
-        expectations_file = sys.argv[3]
+    utility = args.utility
+    geocode_api_key = args.geocode_api_key
+    test_dir = args.test_dir
+    expectations_file = args.expectations_file
     
     # Create temporary directory for notification output
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -276,7 +295,8 @@ def main():
         
         # Run outage notifier
         print("\nRunning outage notifier...")
-        result = run_outage_notifier(test_dir, geocode_api_key, temp_dir)
+        print(f"Utility: {utility}")
+        result = run_outage_notifier(test_dir, utility, geocode_api_key, temp_dir)
         
         if result is None:
             print("Error: Failed to run outage notifier")

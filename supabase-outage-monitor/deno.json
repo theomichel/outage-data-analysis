@@ -1,0 +1,12 @@
+{
+  "nodeModulesDir": "auto",
+  "tasks": {
+    "test": "deno test --allow-net --allow-read --allow-env tests/",
+    "test:watch": "deno test --allow-net --allow-read --allow-env --watch tests/"
+  },
+  "imports": {
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@2",
+    "@std/assert": "jsr:@std/assert@1",
+    "@std/csv": "jsr:@std/csv@1"
+  }
+}

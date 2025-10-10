@@ -1,0 +1,5 @@
+file,outage_id,previous_customers_impacted,previous_expected_length_minutes,previous_elapsed_time_minutes,current_customers_impacted,current_expected_length_minutes,current_elapsed_time_minutes,notification_expected,why
+2025-01-15T143000-KMLOutageAreas.xml,2025-01-15T00:00:00,-1,,,,,,none," -1 is a placeholder, should do nothing"
+2025-01-15T144003-KMLOutageAreas.xml,2025-01-15T13:26:42,,,,100,?,?,new,two entries in xml (each with 50 customers) get combined into 1
+2025-01-15T144003-KMLOutageAreas.xml,2025-01-15T13:27:42,,,,100,?,?,new,single entry above threshold causes notification
+2025-01-15T144003-KMLOutageAreas.xml,2025-01-15T14:30:15,,,,50,?,?,none,single entry below threshold no notification

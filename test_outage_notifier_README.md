@@ -5,24 +5,36 @@ This script tests the `outage_notifier.py` functionality by running it with test
 ## Usage
 
 ```bash
-python test_outage_notifier.py <geocode_api_key> [test_dir] [expectations_file]
+python test_outage_notifier.py -u <utility> -k <geocode_api_key> [-d test_dir] [-e expectations_file]
 ```
 
 ### Parameters:
-- **geocode_api_key** (required): Geocode API key for testing
-- **test_dir** (optional): Directory containing test JSON files (default: `./tests/notifier_test_files`)
-- **expectations_file** (optional): CSV file with test expectations (default: `./tests/notifier_test_files/pge_outages_test_expectations.csv`)
+- **-u, --utility** (required): Utility name (choices: pge, pse, scl, snopud)
+- **-k, --geocode-api-key** (required): Geocode API key for testing
+- **-d, --test-dir** (optional): Directory containing test JSON files (default: `./tests/notifier_test_files`)
+- **-e, --expectations-file** (optional): CSV file with test expectations (default: `./tests/notifier_test_files/pge_outages_test_expectations.csv`)
 
 ### Examples:
 ```bash
-# Basic usage with required geocode API key
-python test_outage_notifier.py "your_geocode_api_key_here"
+# Basic usage with required parameters
+python test_outage_notifier.py -u pge -k "your_geocode_api_key_here"
+
+# Using long form flags
+python test_outage_notifier.py --utility pge --geocode-api-key "your_geocode_api_key_here"
 
 # Custom test directory
-python test_outage_notifier.py "your_geocode_api_key_here" "./custom_test_dir"
+python test_outage_notifier.py -u pge -k "your_api_key" -d "./custom_test_dir"
 
 # Custom test directory and expectations file
-python test_outage_notifier.py "your_geocode_api_key_here" "./custom_test_dir" "./custom_expectations.csv"
+python test_outage_notifier.py -u pge -k "your_api_key" -d "./custom_test_dir" -e "./custom_expectations.csv"
+
+# Test different utilities
+python test_outage_notifier.py -u pse -k "your_api_key"
+python test_outage_notifier.py -u scl -k "your_api_key"
+python test_outage_notifier.py -u snopud -k "your_api_key"
+
+# Get help
+python test_outage_notifier.py --help
 ```
 
 ## What it does

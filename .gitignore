@@ -12,12 +12,15 @@ eggs/
 .eggs/
 lib/
 lib64/
-parts/
+parts/gggg
 sdist/
 var/
 wheels/
 pip-wheel-metadata/
 share/python-wheels/
+output junk/
+node_modules/
+.claude/
 *.egg-info/
 .installed.cfg
 *.egg
