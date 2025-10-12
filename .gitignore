@@ -140,3 +140,4 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+supabase-outage-monitor/.env.test
