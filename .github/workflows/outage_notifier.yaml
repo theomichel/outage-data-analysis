@@ -55,7 +55,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x' # Use the latest Python 3 version
+          python-version: '3.13' # pin 3.13 and 3.14 is (probably) causing pyogrio errors
           
       - name: Install dependencies
         run: |
